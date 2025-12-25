@@ -1,0 +1,17 @@
+{
+  "total_samples": 718,
+  "train_samples": 647,
+  "val_samples": 71,
+  "total_images": 0,
+  "tasks_processed": 45,
+  "val_split": 0.1,
+  "seed": 42,
+  "filtering": {
+    "method": "same_subgoal_only",
+    "description": "Previous steps only include steps with the same subgoal (max 5)",
+    "max_prev_steps_limit": 5,
+    "samples_with_prev_steps": 408,
+    "total_prev_steps_added": 1198,
+    "max_prev_steps_actual": 5
+  }
+}

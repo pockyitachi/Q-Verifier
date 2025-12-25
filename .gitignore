@@ -1,0 +1,40 @@
+# Model checkpoints and weights (too large for git)
+*.pt
+*.pth
+*.bin
+*.safetensors
+checkpoints/
+outputs/
+wandb/
+
+# Keep only final checkpoints, exclude intermediate ones
+**/checkpoint-*/
+
+# Hugging Face cache
+.cache/
+__pycache__/
+*.pyc
+
+# Large data files
+*.tar.gz
+*.zip
+
+# Environment
+.env
+venv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
