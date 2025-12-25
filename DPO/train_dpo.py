@@ -18,8 +18,8 @@ import argparse
 import json
 import os
 from datetime import datetime
-from PIL import Image
 from typing import List, Dict
+from PIL import Image
 
 
 def load_dpo_pairs(pairs_path: str) -> List[dict]:
@@ -31,56 +31,26 @@ def load_dpo_pairs(pairs_path: str) -> List[dict]:
     return pairs
 
 
-def prepare_dpo_sample(pair: dict, image_base_dir: str) -> dict:
+def prepare_dpo_sample_with_image_path(pair: dict, image_base_dir: str) -> dict:
     """
-    Prepare a single DPO sample with images.
-    
-    DPO needs:
-    - prompt: shared input
-    - chosen: preferred response
-    - rejected: non-preferred response
+    Prepare DPO sample with image path for lazy loading.
     """
+    prompt = pair['prompt']
     
-    # Load BEFORE image (shared in prompt)
-    before_path = os.path.join(image_base_dir, pair['prompt_images'][0])
+    # Get image path
+    before_image_path = os.path.join(image_base_dir, pair['prompt_images'][0])
     
-    # Load AFTER images
-    chosen_after_path = os.path.join(image_base_dir, pair['chosen_after_image'])
-    rejected_after_path = os.path.join(image_base_dir, pair['rejected_after_image'])
+    if not os.path.exists(before_image_path):
+        return None
     
-    # Check paths exist
-    for path in [before_path, chosen_after_path, rejected_after_path]:
-        if not os.path.exists(path):
-            print(f"Warning: Image not found: {path}")
-            return None
-    
-    # Load images
-    before_img = Image.open(before_path).convert("RGB")
-    chosen_after_img = Image.open(chosen_after_path).convert("RGB")
-    rejected_after_img = Image.open(rejected_after_path).convert("RGB")
-    
-    # Build prompt with BEFORE image
-    prompt_content = [
-        {"type": "text", "text": pair['prompt']},
-        {"type": "image", "image": before_img},
-    ]
-    
-    # For VLM DPO, we need to include the AFTER image in both chosen and rejected
-    # This is tricky - the AFTER image differs between chosen and rejected
-    
-    # Approach: Include AFTER image description in prompt, actual comparison is text-based
-    # Alternative: Create two separate prompts (one for each AFTER)
-    
-    # For now, we'll structure it as comparing the text responses
-    # The model should learn that "Yes" with correct AFTER is preferred
+    # Load image - required for VLM DPO
+    img = Image.open(before_image_path).convert("RGB")
     
     return {
-        "prompt": prompt_content,
+        "prompt": prompt,
         "chosen": pair['chosen'],
         "rejected": pair['rejected'],
-        "chosen_after_image": chosen_after_img,
-        "rejected_after_image": rejected_after_img,
-        "corruption_type": pair['corruption_type']
+        "images": [img],
     }
 
 
@@ -147,26 +117,27 @@ def main():
     
     print(f"✅ Loaded model from {args.base_model}")
     
-    # Prepare dataset
-    print("\n[3/4] Preparing DPO dataset...")
-    
-    # For DPO with TRL, we need specific format
-    # Note: VLM DPO is complex - this is a simplified text-based version
+    # Prepare dataset with images
+    print("\n[3/4] Preparing DPO dataset with images...")
     
     from datasets import Dataset
     
     dpo_data = []
-    for pair in pairs:
-        # Simplified: use text-only for DPO comparison
-        # The image context is in the training already from SFT/distillation
-        dpo_data.append({
-            "prompt": f"Subgoal: {pair['subgoal']}\nEvaluate if this transition is valid.",
-            "chosen": pair['chosen'],
-            "rejected": pair['rejected'],
-        })
+    skipped = 0
+    for i, pair in enumerate(pairs):
+        if i % 100 == 0:
+            print(f"  Loading {i}/{len(pairs)}...")
+        sample = prepare_dpo_sample_with_image_path(pair, args.image_base_dir)
+        if sample is not None:
+            dpo_data.append(sample)
+        else:
+            skipped += 1
+    
+    if skipped > 0:
+        print(f"  Skipped {skipped} samples (missing images)")
     
     dataset = Dataset.from_list(dpo_data)
-    print(f"✅ Prepared {len(dataset)} DPO samples")
+    print(f"✅ Prepared {len(dataset)} DPO samples with images")
     
     # Train with DPO
     print("\n[4/4] Starting DPO training...")
@@ -186,13 +157,14 @@ def main():
         bf16=True,
         remove_unused_columns=False,
         report_to="none",
+        dataset_num_proc=1,  # Single process for PIL image handling
     )
     
     trainer = DPOTrainer(
         model=model,
         args=training_config,
         train_dataset=dataset,
-        tokenizer=processor,
+        processing_class=processor,  # Unsloth expects the full processor
     )
     
     # Train

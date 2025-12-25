@@ -1,0 +1,11 @@
+{
+  "total_pairs": 1034,
+  "source_samples": 647,
+  "corruptions_per_sample": 2,
+  "corruption_types": {
+    "cross_task": 517,
+    "wrong_step": 516,
+    "no_change": 1
+  },
+  "seed": 42
+}
