@@ -59,11 +59,28 @@ model architectures and training approaches.
 ================================================================================
 
 The action verification task can be formally defined as follows. Given an input
-tuple (B, A, a, g) where B represents the BEFORE screenshot, A represents the
-AFTER screenshot, a represents the action description, and g represents the
-current subgoal, the verifier must produce an output (v, r) where v is a binary
-verdict (Yes/No) indicating whether the action succeeded, and r is a natural
-language explanation supporting the verdict.
+tuple $(B, A, a, g)$ where $B \in \mathcal{I}$ represents the BEFORE screenshot,
+$A \in \mathcal{I}$ represents the AFTER screenshot, $a \in \mathcal{A}$
+represents the action description, and $g \in \mathcal{G}$ represents the
+current subgoal, the verifier function $f_\theta$ must produce an output:
+
+\begin{equation}
+f_\theta: \mathcal{I} \times \mathcal{I} \times \mathcal{A} \times \mathcal{G} \rightarrow \{0, 1\} \times \mathcal{R}
+\end{equation}
+
+where the output $(v, r)$ consists of a binary verdict $v \in \{0, 1\}$
+(Yes/No) indicating whether the action succeeded, and $r \in \mathcal{R}$ is a
+natural language explanation supporting the verdict.
+
+The verification objective can be expressed as maximizing the probability of
+correct classification:
+
+\begin{equation}
+\theta^* = \arg\max_\theta \mathbb{E}_{(B,A,a,g,y) \sim \mathcal{D}} \left[ \log P_\theta(v = y | B, A, a, g) \right]
+\end{equation}
+
+where $y$ is the ground truth label and $\mathcal{D}$ is the training
+distribution.
 
 The verification decision must consider multiple factors. The verifier must
 understand the visual content of both screenshots, recognize UI elements and
@@ -71,6 +88,17 @@ their states, comprehend the semantic meaning of the action description, and
 evaluate whether the observed transition aligns with the stated subgoal. This
 requires sophisticated vision-language understanding that goes beyond simple
 image comparison.
+
+Formally, let $\phi: \mathcal{I} \rightarrow \mathbb{R}^d$ be the vision
+encoder and $\psi: \mathcal{T} \rightarrow \mathbb{R}^d$ be the text encoder.
+The multimodal representation is:
+
+\begin{equation}
+h = \text{Fusion}(\phi(B), \phi(A), \psi(a), \psi(g))
+\end{equation}
+
+where the fusion mechanism combines visual and textual representations for
+the final classification decision.
 
 In practice, the input is structured as a conversation between a user providing
 the context and screenshots, and an assistant providing the verification
@@ -88,16 +116,100 @@ cases from genuine success.
 
 
 ================================================================================
-                            3. METHODOLOGY
+                              3. DATASET
 ================================================================================
 
-3.1 Supervised Fine-Tuning
+3.1 Data Source
+
+The training data is derived from mobile device interaction recordings
+capturing GUI-based task execution. Each recording documents a user (or agent)
+performing a multi-step task on a mobile device, with screenshots captured
+before and after each action. The dataset covers diverse task categories
+including web shopping, information management, social sharing, media
+entertainment, and general tool usage.
+
+3.2 Data Format
+
+Each sample in the dataset consists of the following components:
+
+\begin{itemize}
+\item $B$: BEFORE screenshot (PNG/JPG image, typically 1080×2400 pixels)
+\item $A$: AFTER screenshot (PNG/JPG image, same resolution)
+\item $\tau$: Global task description (natural language)
+\item $g$: Current subgoal (natural language)
+\item $a$: Action description including type and parameters
+\item $y$: Ground truth label ($y \in \{0, 1\}$, where 1 = Yes, 0 = No)
+\item $r$: Reasoning explanation (natural language)
+\end{itemize}
+
+The action description follows a structured format specifying the action type
+(e.g., Tap, Swipe, Type, Tap\_Type\_and\_Enter) along with coordinates and
+any text input.
+
+3.3 Dataset Statistics
+
+The filtered dataset used for training contains:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Training samples & 648 \\
+Validation samples & 71 \\
+Total images & 1,436 \\
+Positive samples (Yes) & 517 (79.8\%) \\
+Negative samples (No) & 131 (20.2\%) \\
+Average images per sample & 2 \\
+Unique tasks & ~50 \\
+\hline
+\end{tabular}
+\end{table}
+
+The class distribution exhibits significant imbalance:
+
+\begin{equation}
+P(y=1) = \frac{517}{648} \approx 0.80, \quad P(y=0) = \frac{131}{648} \approx 0.20
+\end{equation}
+
+This imbalance reflects the natural distribution where most deliberate actions
+in recorded trajectories succeed. We address this imbalance through data
+corruption techniques described in Section 4.3 (Methodology).
+
+3.4 Data Preprocessing
+
+The raw data underwent several preprocessing steps:
+
+1. Image validation: Samples with missing or corrupted images were removed
+2. Format standardization: All samples converted to consistent JSONL format
+3. Path resolution: Image paths verified and normalized
+4. Quality filtering: Samples with incomplete metadata were excluded
+
+After filtering, the dataset was split into training (90%) and validation
+(10%) sets, ensuring no task overlap between splits to evaluate generalization.
+
+
+================================================================================
+                            4. METHODOLOGY
+================================================================================
+
+4.1 Supervised Fine-Tuning
 
 Our first training approach employs supervised fine-tuning on a curated dataset
 of labeled action verification examples. We utilize the Unsloth framework for
 efficient fine-tuning of vision-language models, applying Low-Rank Adaptation
 (LoRA) to reduce the number of trainable parameters while maintaining model
 quality.
+
+The SFT objective minimizes the cross-entropy loss over the training set:
+
+\begin{equation}
+\mathcal{L}_{\text{SFT}} = -\sum_{i=1}^{N} \sum_{t=1}^{T_i} \log P_\theta(y_t^{(i)} | x^{(i)}, y_{<t}^{(i)})
+\end{equation}
+
+where $x^{(i)}$ is the input (images + text), $y^{(i)}$ is the target response,
+$N$ is the number of training samples, and $T_i$ is the sequence length.
 
 The training data consists of labeled samples collected from mobile device
 interaction recordings. Each sample contains a pair of screenshots (before and
@@ -106,13 +218,25 @@ ground truth label indicating whether the action succeeded. The initial dataset
 contains approximately 80% positive (Yes) and 20% negative (No) labels,
 reflecting the natural distribution where most deliberate actions succeed.
 
-For the fine-tuning process, we configure LoRA with rank 16 and alpha 16,
+For LoRA, we decompose the weight update as:
+
+\begin{equation}
+W' = W_0 + \Delta W = W_0 + BA
+\end{equation}
+
+where $W_0 \in \mathbb{R}^{d \times k}$ is the frozen pre-trained weight,
+$B \in \mathbb{R}^{d \times r}$ and $A \in \mathbb{R}^{r \times k}$ are the
+low-rank matrices with rank $r = 16 \ll \min(d, k)$. This reduces trainable
+parameters from $d \times k$ to $r \times (d + k)$.
+
+We configure LoRA with rank $r = 16$ and scaling factor $\alpha = 16$,
 targeting the attention and feed-forward projection matrices (q_proj, k_proj,
 v_proj, o_proj, gate_proj, up_proj, down_proj). We employ 4-bit quantization
 to enable training on consumer GPUs while maintaining model quality. Training
 proceeds for 3 epochs with a batch size of 1 and gradient accumulation over 8
-steps, yielding an effective batch size of 8. We use a learning rate of 2e-4
-with cosine annealing and 10% warmup, training in bfloat16 precision.
+steps, yielding an effective batch size of 8. We use a learning rate of
+$\eta = 2 \times 10^{-4}$ with cosine annealing and 10% warmup, training in
+bfloat16 precision.
 
 The UnslothVisionDataCollator handles the multimodal nature of the data,
 processing images through the vision encoder and text through the language
@@ -121,13 +245,24 @@ sequence length is set to 4096-8192 tokens depending on the model architecture,
 accommodating both images and text context.
 
 
-3.2 Teacher-Student Distillation
+4.2 Teacher-Student Distillation
 
 While supervised fine-tuning produces functional verifiers, we observed that
 the quality of reasoning in the original labels varied. Some labels provided
 detailed explanations while others offered only brief justifications. To
 improve reasoning quality, we implemented a teacher-student distillation
 approach using GPT-5.2 as the teacher model.
+
+The distillation objective trains the student model $\theta_S$ to match the
+teacher model $\theta_T$ (GPT-5.2) outputs:
+
+\begin{equation}
+\mathcal{L}_{\text{distill}} = -\sum_{i=1}^{N} \sum_{t=1}^{T_i} \log P_{\theta_S}(\hat{y}_t^{(i)} | x^{(i)}, \hat{y}_{<t}^{(i)})
+\end{equation}
+
+where $\hat{y}^{(i)} = f_{\theta_T}(x^{(i)})$ is the teacher's response for
+input $x^{(i)}$. Unlike standard knowledge distillation which uses soft labels,
+we use the teacher's generated text directly as training targets.
 
 The distillation process proceeds in two stages. In the first stage, we process
 each training sample through GPT-5.2 Vision, providing the BEFORE and AFTER
@@ -158,7 +293,7 @@ represents a reasonable one-time investment for significantly improved
 reasoning quality. Current pricing can be found at platform.openai.com/pricing.
 
 
-3.3 Data Corruption for Negative Sample Generation
+4.3 Data Corruption for Negative Sample Generation
 
 The original dataset exhibits significant class imbalance, with approximately
 80% positive samples and only 20% negative samples. This imbalance can lead to
@@ -166,49 +301,82 @@ models that are biased toward predicting success, resulting in high false
 positive rates. To address this issue, we developed trajectory-aware data
 corruption techniques that generate realistic negative samples.
 
+Let $\mathcal{D}^+ = \{(B_i, A_i, a_i, g_i, y_i=1)\}_{i=1}^{N^+}$ denote the
+set of positive samples. The class imbalance ratio is:
+
+\begin{equation}
+\rho = \frac{N^+}{N^+ + N^-} \approx 0.80
+\end{equation}
+
+To achieve a balanced dataset with target ratio $\rho^* = 0.50$, we need to
+generate $K$ additional negative samples:
+
+\begin{equation}
+K = \frac{\rho^* \cdot N - N^-}{1 - \rho^*} = N^+ - N^-
+\end{equation}
+
 Our corruption strategy is inspired by the observation that GUI interactions
 form trajectories: sequences of actions that progress toward a goal. A correct
-trajectory might be represented as states A → B → C → D → E, where each
-transition represents a successful action. By corrupting individual transitions
-—replacing the correct AFTER state with an incorrect one—we create examples of
-what failure looks like.
+trajectory might be represented as states $s_0 \rightarrow s_1 \rightarrow
+s_2 \rightarrow \ldots \rightarrow s_T$, where each transition represents a
+successful action. By corrupting individual transitions—replacing the correct
+AFTER state with an incorrect one—we create examples of what failure looks like.
 
-We implement four corruption types, each simulating a different failure mode.
-Cross-task corruption replaces the AFTER image with an image from a completely
-different task, simulating catastrophic navigation errors such as opening the
-wrong application. Wrong-step-future corruption uses an AFTER image from a
-later step in the same task, simulating cases where the agent appears to skip
-required intermediate steps. Wrong-step-past corruption uses an AFTER image
-from an earlier step, simulating regression or undoing of progress. No-change
-corruption sets the AFTER image equal to the BEFORE image, simulating actions
-that have no effect.
+We define four corruption functions $C_k: \mathcal{I} \rightarrow \mathcal{I}$
+for $k \in \{1, 2, 3, 4\}$:
 
-Each corruption type is applied with equal probability (25%), and the corrupted
-samples are labeled as negative with generated rejection reasons appropriate to
-the corruption type. For example, cross-task corruptions receive explanations
-noting that the screen shows content unrelated to the intended subgoal, while
-no-change corruptions note that the screenshots are identical despite the
-action requiring a visible change.
+\begin{align}
+C_1(A_i) &= A_j \text{ where } \text{task}(j) \neq \text{task}(i) & \text{(cross-task)} \\
+C_2(A_i) &= A_j \text{ where } \text{task}(j) = \text{task}(i), t_j > t_i & \text{(wrong-step-future)} \\
+C_3(A_i) &= A_j \text{ where } \text{task}(j) = \text{task}(i), t_j < t_i & \text{(wrong-step-past)} \\
+C_4(A_i) &= B_i & \text{(no-change)}
+\end{align}
 
-The corruption process calculates the number of negative samples needed to
-achieve a target ratio (50% in our experiments), generates that many corrupted
-samples, combines them with the original data, and shuffles the result. This
-produces a balanced dataset suitable for training verifiers that can reliably
-detect both success and failure.
+Each corruption type is applied with equal probability $P(C_k) = 0.25$, and
+the corrupted samples are labeled as negative with generated rejection reasons
+appropriate to the corruption type.
+
+The augmented dataset becomes:
+
+\begin{equation}
+\mathcal{D}' = \mathcal{D} \cup \{(B_i, C_k(A_i), a_i, g_i, y=0)\}_{i \in S, k \sim \text{Uniform}(1,4)}
+\end{equation}
+
+where $S$ is a randomly selected subset of positive samples. This produces a
+balanced dataset suitable for training verifiers that can reliably detect both
+success and failure.
 
 
-3.4 Direct Preference Optimization
+4.4 Direct Preference Optimization
 
 We also explored Direct Preference Optimization (DPO) as an alternative
 training approach. DPO enables training on preference pairs without requiring
 reinforcement learning, making it more stable and computationally efficient
 than traditional RLHF approaches.
 
+The DPO objective directly optimizes the policy to prefer chosen responses
+over rejected ones:
+
+\begin{equation}
+\mathcal{L}_{\text{DPO}} = -\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}} \left[ \log \sigma \left( \beta \log \frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)} - \beta \log \frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)} \right) \right]
+\end{equation}
+
+where $y_w$ is the preferred (chosen) response, $y_l$ is the dispreferred
+(rejected) response, $\pi_\theta$ is the policy being trained, $\pi_{\text{ref}}$
+is the reference policy, $\beta$ is the temperature parameter controlling
+preference strength, and $\sigma$ is the sigmoid function.
+
 For action verification, we construct preference pairs where the "chosen"
 response corresponds to correct verification of a genuine success, while the
 "rejected" response corresponds to incorrect acceptance of a corrupted failure.
 Both responses share the same prompt (BEFORE image, action description, and
 subgoal) but differ in the AFTER image and corresponding verdict.
+
+The preference data is constructed as:
+
+\begin{equation}
+\mathcal{D}_{\text{pref}} = \{(x_i, y_w^{(i)}, y_l^{(i)})\} \text{ where } x_i = (B_i, a_i, g_i), y_w = (\text{Yes}, A_i), y_l = (\text{No}, C_k(A_i))
+\end{equation}
 
 However, our experiments with DPO on vision-language models encountered
 significant technical challenges. The multimodal nature of the data created
@@ -220,10 +388,10 @@ these technical issues.
 
 
 ================================================================================
-                           4. IMPLEMENTATION
+                           5. IMPLEMENTATION
 ================================================================================
 
-4.1 Model Architectures
+5.1 Model Architectures
 
 We implement our training approaches on two families of vision-language models
 from the Qwen series. The Qwen3-VL family represents the latest generation,
@@ -237,7 +405,7 @@ how model capacity and architecture affect verification performance. We expect
 larger models to perform better due to increased representational capacity, and
 newer architectures to benefit from improved vision-language alignment.
 
-4.2 Training Pipeline
+5.2 Training Pipeline
 
 The complete training pipeline consists of several stages. The first stage is
 environment setup, which installs dependencies and applies necessary patches
@@ -255,7 +423,7 @@ Each stage is implemented as a standalone Python script with command-line
 arguments for configuration. This modular design enables experimentation with
 different combinations of training approaches.
 
-4.3 Environment Requirements
+5.3 Environment Requirements
 
 Training requires several patches to the Unsloth library for proper VLM
 support. The first patch addresses missing psutil imports in the compiler
@@ -267,10 +435,10 @@ Unsloth, TRL, Transformers, Datasets, and Pillow.
 
 
 ================================================================================
-                         5. EXPERIMENTAL DESIGN
+                         6. EXPERIMENTAL DESIGN
 ================================================================================
 
-5.1 Training Configurations
+6.1 Training Configurations
 
 All models are trained using consistent hyperparameters to enable fair
 comparison. The LoRA configuration uses rank 16 and alpha 16, targeting all
@@ -280,7 +448,7 @@ batch size 1 and gradient accumulation 8, yielding an effective batch size of
 distillation. We use cosine learning rate scheduling with 10% warmup and train
 in bfloat16 precision for computational efficiency.
 
-5.2 Models Trained
+6.2 Models Trained
 
 We have trained the following model variants:
 
@@ -298,7 +466,7 @@ Qwen2.5-VL Family:
 This collection of models enables comparison across model sizes, architectures,
 and training approaches.
 
-5.3 Evaluation Protocol
+6.3 Evaluation Protocol
 
 Models are evaluated on held-out validation data using a standardized protocol.
 For each sample, we provide the BEFORE and AFTER images along with the task
@@ -316,10 +484,10 @@ to this document upon completion.
 
 
 ================================================================================
-                           6. DISCUSSION
+                           7. DISCUSSION
 ================================================================================
 
-6.1 Design Decisions
+7.1 Design Decisions
 
 Several key design decisions shape our approach. The choice of LoRA over full
 fine-tuning reflects practical constraints: 4-bit quantization with LoRA
@@ -340,7 +508,7 @@ specific failure modes that might occur in real agent deployments: wrong
 applications opening, steps being skipped, progress being undone, or actions
 having no effect.
 
-6.2 Trade-offs
+7.2 Trade-offs
 
 We anticipate several trade-offs that our evaluation will quantify. First,
 there is likely a trade-off between model size and computational cost: larger
@@ -350,7 +518,7 @@ improved reasoning quality, particularly in smaller models with limited
 capacity. Third, training on balanced data may reduce false positives at the
 cost of some reduction in true positive rate.
 
-6.3 Limitations
+7.3 Limitations
 
 Several limitations should be acknowledged. The training data comes from
 mobile device recordings and may not generalize to desktop interfaces or
@@ -365,7 +533,7 @@ of the multimodal DPO challenges.
 
 
 ================================================================================
-                           7. CONCLUSION
+                           8. CONCLUSION
 ================================================================================
 
 This research presents a comprehensive methodology for training vision-language
@@ -388,7 +556,7 @@ completion—capabilities essential for deployment in real-world applications.
 
 
 ================================================================================
-                             8. REFERENCES
+                             9. REFERENCES
 ================================================================================
 
 [To be completed]

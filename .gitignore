@@ -76,6 +76,19 @@ Thumbs.db
 *.tmp
 *.temp
 
+# LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+
 # ===========================================
 # Keep these (don't ignore)
 # ===========================================
