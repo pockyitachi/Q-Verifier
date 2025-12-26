@@ -10,7 +10,7 @@ robust mechanisms to verify whether their executed actions successfully
 contribute to task completion. This research presents a comprehensive study on
 training Vision-Language Models (VLMs) as action verifiers, exploring multiple
 training paradigms including supervised fine-tuning, teacher-student
-distillation with GPT-4, and data corruption strategies for generating negative
+distillation with GPT-5.2, and data corruption strategies for generating negative
 samples. We develop verifiers based on the Qwen3-VL (4B, 8B) and Qwen2.5-VL
 (3B, 7B) architectures and propose trajectory-aware corruption techniques for
 creating balanced training datasets. This document describes our methodology
@@ -46,7 +46,7 @@ fundamental to building reliable autonomous agents.
 
 Our contributions are threefold. First, we develop and compare training
 strategies for VLM verifiers, including supervised fine-tuning with LoRA and
-teacher-student distillation using GPT-4 generated reasoning. Second, we
+teacher-student distillation using GPT-5.2 generated reasoning. Second, we
 introduce trajectory-aware data corruption techniques that generate realistic
 negative samples to address dataset imbalance. Third, we implement a complete
 training pipeline with environment setup, data processing, training scripts,
@@ -127,18 +127,18 @@ While supervised fine-tuning produces functional verifiers, we observed that
 the quality of reasoning in the original labels varied. Some labels provided
 detailed explanations while others offered only brief justifications. To
 improve reasoning quality, we implemented a teacher-student distillation
-approach using GPT-4 as the teacher model.
+approach using GPT-5.2 as the teacher model.
 
 The distillation process proceeds in two stages. In the first stage, we process
-each training sample through GPT-4 Vision, providing the BEFORE and AFTER
-screenshots along with the task context. GPT-4 generates detailed reasoning
+each training sample through GPT-5.2 Vision, providing the BEFORE and AFTER
+screenshots along with the task context. GPT-5.2 generates detailed reasoning
 following a structured chain-of-thought format: (1) describe the BEFORE state,
 (2) describe the AFTER state, (3) identify what changed between them, (4)
 evaluate whether the change aligns with the subgoal, and (5) provide the final
 verdict with explanation.
 
 In the second stage, we continue training the supervised fine-tuned model on
-these GPT-4 generated responses. We use a lower learning rate of 1e-4 to
+these GPT-5.2 generated responses. We use a lower learning rate of 1e-4 to
 preserve the knowledge acquired during supervised fine-tuning while adapting
 to the more detailed reasoning style. The maximum sequence length is increased
 to 8192 tokens to accommodate the longer explanations.
@@ -148,6 +148,14 @@ structured reasoning will improve the student model's ability to perform
 similar reasoning at inference time. Even if the final classification accuracy
 remains similar, the improved reasoning provides better interpretability and
 may generalize better to novel situations.
+
+Cost Analysis: We processed 648 training samples through GPT-5.2, with each
+sample containing two images (BEFORE and AFTER screenshots) plus text context.
+GPT-5.2 is OpenAI's latest flagship model (December 2025) with enhanced vision
+capabilities and improved reasoning. For our dataset, the total cost was
+approximately $7-8 USD for generating all distillation responses. This
+represents a reasonable one-time investment for significantly improved
+reasoning quality. Current pricing can be found at platform.openai.com/pricing.
 
 
 3.3 Data Corruption for Negative Sample Generation
@@ -237,7 +245,7 @@ to the Unsloth library for VLM compatibility. The second stage is data
 preparation, which filters and formats the training data, ensuring all images
 are accessible and samples are properly structured. The third stage is
 supervised fine-tuning, which trains the base model on labeled verification
-examples. The fourth stage is optional distillation, which generates GPT-4
+examples. The fourth stage is optional distillation, which generates GPT-5.2
 responses and continues training on these enhanced labels. The fifth stage is
 optional data corruption, which generates balanced datasets for training on
 negative examples. The sixth stage is evaluation, which tests trained models
@@ -320,9 +328,9 @@ specific LoRA configuration (rank 16, targeting all projection matrices) was
 chosen based on prior work showing this configuration works well for
 instruction-following tasks.
 
-The distillation approach using GPT-4 as teacher was motivated by the
+The distillation approach using GPT-5.2 as teacher was motivated by the
 observation that human labels varied in reasoning quality. By training on
-GPT-4's structured chain-of-thought responses, we aim to improve the student
+GPT-5.2's structured chain-of-thought responses, we aim to improve the student
 model's reasoning ability. The lower learning rate during distillation helps
 preserve the classification ability learned during supervised fine-tuning.
 
@@ -363,7 +371,7 @@ of the multimodal DPO challenges.
 This research presents a comprehensive methodology for training vision-language
 models as GUI action verifiers. We have developed and implemented multiple
 training approaches including supervised fine-tuning with LoRA, teacher-student
-distillation using GPT-4, and trajectory-aware data corruption for balanced
+distillation using GPT-5.2, and trajectory-aware data corruption for balanced
 training. The complete pipeline includes environment setup, data processing,
 training scripts, and evaluation tools.
 
@@ -438,7 +446,7 @@ verifier_training/
 │   ├── test_verifier.py       - Evaluation script
 │   └── training_data_filtered/ - Training data
 ├── Teacher_Student_Distill/   - Distillation code
-│   ├── generate_gpt_data.py   - GPT-4 response generation
+│   ├── generate_gpt_data.py   - GPT-5.2 response generation
 │   └── train_distilled.py     - Distillation training
 ├── Data_Corruption/           - Data corruption code
 │   └── generate_corruptions.py - Corruption generation
@@ -449,6 +457,107 @@ verifier_training/
 
 ================================================================================
                               APPENDIX C
+                          PROMPT EXAMPLES
+================================================================================
+
+C.1 Base Verification Prompt (SFT Training)
+
+The following system prompt is used for the verification task:
+
+"""
+You are a mobile GUI reflector.
+Your job is to determine whether the current state transition is valid —
+meaning whether it aligns with both the user's global task and the current
+subgoal.
+
+=== Global Task ===
+[Description of the overall user objective]
+
+=== Current Subgoal ===
+[The immediate goal being worked towards]
+
+=== Current Transition ===
+{
+  "from_state": {
+    "description": "[Description of BEFORE screenshot]",
+    "precondition": "[What must be true before action]",
+    "postcondition": "[Expected state after action]"
+  },
+  "action": {
+    "type": "[Action type, e.g., Tap_Type_and_Enter]",
+    "description": "[What the action does]",
+    "arguments": { "x": 511, "y": 465, "text": "..." }
+  },
+  "to_state": {
+    "description": "[Description of AFTER screenshot]",
+    ...
+  }
+}
+"""
+
+The model receives this prompt along with BEFORE and AFTER screenshots and
+must output a JSON response: {"answer": "Yes/No", "reason": "..."}
+
+
+C.2 GPT-5.2 Distillation Prompt Enhancement
+
+For generating high-quality reasoning with GPT-5.2, we append the following
+instructions to the base prompt:
+
+"""
+IMPORTANT CLARIFICATION:
+A subgoal may require MULTIPLE actions to complete. You are evaluating whether
+THIS SINGLE ACTION is a valid STEP TOWARDS the subgoal, NOT whether it fully
+completes the subgoal.
+
+An action is VALID (Yes) if:
+- It makes progress toward the subgoal
+- It is a necessary preparatory step (e.g., going to home screen before
+  opening an app)
+- It contributes to eventually achieving the subgoal
+
+An action is INVALID (No) if:
+- It goes in the wrong direction
+- It is counterproductive to the subgoal
+- It does not contribute to progress (e.g., the expected change did not happen)
+
+Provide a detailed, step-by-step analysis:
+1. Describe what you see in the BEFORE image
+2. Describe what you see in the AFTER image
+3. Explain what changed between the two states
+4. Evaluate if this action is a valid STEP TOWARDS the subgoal (not whether
+   it completes it)
+5. Give your final answer with clear reasoning
+
+Format your response as JSON:
+{"answer": "Yes" or "No", "reason": "Your detailed reasoning here"}
+"""
+
+
+C.3 Expected Output Format
+
+SFT Model Output (concise):
+{
+  "answer": "Yes",
+  "reason": "Action succeeded: The search bar was tapped and the query was
+             entered, displaying relevant search results."
+}
+
+Distilled Model Output (detailed chain-of-thought):
+{
+  "answer": "Yes",
+  "reason": "1) BEFORE: The Walmart search bar shows an empty query field with
+             the keyboard open. 2) AFTER: The search bar now contains
+             'Nintendo Switch Joy-Con' and results are displayed below.
+             3) CHANGE: The search query was entered and executed successfully.
+             4) EVALUATION: This action directly advances the subgoal of
+             searching for the product. 5) FINAL: Yes—this action correctly
+             initiates the search and displays relevant results."
+}
+
+
+================================================================================
+                              APPENDIX D
                      RESULTS (TO BE COMPLETED)
 ================================================================================
 
