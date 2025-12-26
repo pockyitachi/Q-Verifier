@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Train Qwen3-VL Verifier with Unsloth
+Train Qwen VL Verifier with Unsloth
+
+Supports:
+- Qwen3-VL: 4B, 8B
+- Qwen2.5-VL: 3B, 7B
 
 Usage:
     pip install unsloth unsloth_zoo datasets trl pillow
-    python train_verifier.py --data_dir training_data_filtered --epochs 3
-
-For RunPod/Vast.ai:
-    1. Upload training_data_filtered.zip
-    2. unzip training_data_filtered.zip
-    3. python train_verifier.py
+    python train_verifier.py --model unsloth/Qwen2.5-VL-3B-Instruct --output_dir ./qwen25_vl_verifier_3b
+    python train_verifier.py --model unsloth/Qwen2.5-VL-7B-Instruct --output_dir ./qwen25_vl_verifier_7b
 """
 
 import argparse
@@ -20,11 +20,16 @@ from PIL import Image
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train Qwen3-VL Verifier")
+    parser = argparse.ArgumentParser(description="Train Qwen VL Verifier (Qwen3-VL or Qwen2.5-VL)")
     parser.add_argument("--data_dir", type=str, default="training_data_filtered",
                         help="Path to training data directory")
     parser.add_argument("--model", type=str, default="unsloth/Qwen3-VL-4B-Instruct",
-                        choices=["unsloth/Qwen3-VL-4B-Instruct", "unsloth/Qwen3-VL-8B-Instruct"],
+                        choices=[
+                            "unsloth/Qwen3-VL-4B-Instruct", 
+                            "unsloth/Qwen3-VL-8B-Instruct",
+                            "unsloth/Qwen2.5-VL-3B-Instruct",
+                            "unsloth/Qwen2.5-VL-7B-Instruct",
+                        ],
                         help="Model to fine-tune")
     parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size per device")
@@ -41,7 +46,7 @@ def main():
     args = parser.parse_args()
     
     print("=" * 60)
-    print("QWEN3-VL VERIFIER TRAINING")
+    print("QWEN VL VERIFIER TRAINING")
     print("=" * 60)
     print(f"Model: {args.model}")
     print(f"Data: {args.data_dir}")

@@ -1,40 +1,84 @@
-# Model checkpoints and weights (too large for git)
+# ===========================================
+# Q-Verifier .gitignore
+# ===========================================
+
+# Model weights (too large for git)
 *.pt
 *.pth
 *.bin
 *.safetensors
-checkpoints/
-outputs/
-wandb/
+*.gguf
 
-# Keep only final checkpoints, exclude intermediate ones
+# Intermediate checkpoints
 **/checkpoint-*/
+
+# Trained model directories (download separately)
+SFT/qwen3_vl_verifier_4b/
+SFT/qwen3_vl_verifier_8b/
+SFT/qwen25_vl_verifier_3b/
+SFT/qwen25_vl_verifier_7b/
+Teacher_Student_Distill/qwen3_vl_verifier_distilled_4b/
+Teacher_Student_Distill/qwen3_vl_verifier_distilled_8b/
+Teacher_Student_Distill/qwen25_vl_verifier_distilled_3b/
+Teacher_Student_Distill/qwen25_vl_verifier_distilled_7b/
+
+# Compiled cache
+**/unsloth_compiled_cache/
+**/__pycache__/
+*.pyc
+*.pyo
 
 # Hugging Face cache
 .cache/
-__pycache__/
-*.pyc
+~/.cache/huggingface/
 
-# Large data files
+# Large archives
 *.tar.gz
-*.zip
+
+# Model zip files (too large)
+trained_models.zip
+qwen25_trained_models.zip
+qwen3_trained_models.zip
+
+# Training data images (download separately)
+**/training_data_filtered/images/
+**/training_data_filtered/images.zip
+**/training_data/images/
+
+# Training outputs
+wandb/
+outputs/
+logs/
+*.log
 
 # Environment
 .env
+.env.local
 venv/
 .venv/
+env/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 
-# Logs
-*.log
-logs/
-
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
+# Jupyter
+.ipynb_checkpoints/
+
+# Temporary files
+*.tmp
+*.temp
+
+# ===========================================
+# Keep these (don't ignore)
+# ===========================================
+# !**/final/  # Keep final model configs (weights still ignored)
+# !**/*.json  # Keep config files
+# !**/*.md    # Keep documentation

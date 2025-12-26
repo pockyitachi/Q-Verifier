@@ -1,0 +1,472 @@
+================================================================================
+          VISION-LANGUAGE MODEL VERIFIERS FOR GUI ACTION VALIDATION:
+                A STUDY ON TRAINING STRATEGIES AND DISTILLATION
+================================================================================
+
+                                  ABSTRACT
+
+Autonomous GUI agents that interact with mobile and desktop interfaces require
+robust mechanisms to verify whether their executed actions successfully
+contribute to task completion. This research presents a comprehensive study on
+training Vision-Language Models (VLMs) as action verifiers, exploring multiple
+training paradigms including supervised fine-tuning, teacher-student
+distillation with GPT-4, and data corruption strategies for generating negative
+samples. We develop verifiers based on the Qwen3-VL (4B, 8B) and Qwen2.5-VL
+(3B, 7B) architectures and propose trajectory-aware corruption techniques for
+creating balanced training datasets. This document describes our methodology
+and implementation details, with comprehensive evaluation results to be added
+upon completion of extended testing.
+
+
+================================================================================
+                              1. INTRODUCTION
+================================================================================
+
+The emergence of autonomous GUI agents represents a significant advancement in
+human-computer interaction research. These agents, powered by large language
+models and vision-language models, can interpret natural language instructions
+and execute corresponding actions on graphical user interfaces. However, a
+critical challenge remains: determining whether an executed action actually
+made progress toward the intended goal.
+
+Consider an agent tasked with finding the cheapest Nintendo Switch controller
+on a shopping app. The agent might tap on the search bar, type a query, and
+press enter. But how do we know the action succeeded? The search might have
+failed silently, the wrong app might have opened, or the interface might have
+responded unexpectedly. Without reliable verification, agents cannot detect
+errors, plan recovery strategies, or confirm task completion.
+
+This research addresses the verification challenge by training Vision-Language
+Models to serve as action verifiers. Given a BEFORE screenshot (the state
+before an action), an AFTER screenshot (the state after the action), and a
+description of the intended action and subgoal, the verifier must determine
+whether the action successfully contributed to progress. This binary
+classification task—answering "Yes" or "No" with supporting reasoning—is
+fundamental to building reliable autonomous agents.
+
+Our contributions are threefold. First, we develop and compare training
+strategies for VLM verifiers, including supervised fine-tuning with LoRA and
+teacher-student distillation using GPT-4 generated reasoning. Second, we
+introduce trajectory-aware data corruption techniques that generate realistic
+negative samples to address dataset imbalance. Third, we implement a complete
+training pipeline with environment setup, data processing, training scripts,
+and evaluation tools that enables systematic experimentation with different
+model architectures and training approaches.
+
+
+================================================================================
+                          2. PROBLEM FORMULATION
+================================================================================
+
+The action verification task can be formally defined as follows. Given an input
+tuple (B, A, a, g) where B represents the BEFORE screenshot, A represents the
+AFTER screenshot, a represents the action description, and g represents the
+current subgoal, the verifier must produce an output (v, r) where v is a binary
+verdict (Yes/No) indicating whether the action succeeded, and r is a natural
+language explanation supporting the verdict.
+
+The verification decision must consider multiple factors. The verifier must
+understand the visual content of both screenshots, recognize UI elements and
+their states, comprehend the semantic meaning of the action description, and
+evaluate whether the observed transition aligns with the stated subgoal. This
+requires sophisticated vision-language understanding that goes beyond simple
+image comparison.
+
+In practice, the input is structured as a conversation between a user providing
+the context and screenshots, and an assistant providing the verification
+response. The user message includes the global task description, current
+subgoal, action taken, and both BEFORE and AFTER images. The assistant response
+is a JSON object containing the answer field ("Yes" or "No") and a reason field
+explaining the decision.
+
+The challenge is compounded by the diversity of possible failure modes. Actions
+can fail completely (nothing happens), fail partially (some progress but not
+the intended outcome), succeed at the wrong task (correct action on wrong
+element), or appear to succeed while actually failing (interface shows expected
+elements but state is incorrect). A robust verifier must distinguish all these
+cases from genuine success.
+
+
+================================================================================
+                            3. METHODOLOGY
+================================================================================
+
+3.1 Supervised Fine-Tuning
+
+Our first training approach employs supervised fine-tuning on a curated dataset
+of labeled action verification examples. We utilize the Unsloth framework for
+efficient fine-tuning of vision-language models, applying Low-Rank Adaptation
+(LoRA) to reduce the number of trainable parameters while maintaining model
+quality.
+
+The training data consists of labeled samples collected from mobile device
+interaction recordings. Each sample contains a pair of screenshots (before and
+after an action), text descriptions of the task, subgoal, and action, and a
+ground truth label indicating whether the action succeeded. The initial dataset
+contains approximately 80% positive (Yes) and 20% negative (No) labels,
+reflecting the natural distribution where most deliberate actions succeed.
+
+For the fine-tuning process, we configure LoRA with rank 16 and alpha 16,
+targeting the attention and feed-forward projection matrices (q_proj, k_proj,
+v_proj, o_proj, gate_proj, up_proj, down_proj). We employ 4-bit quantization
+to enable training on consumer GPUs while maintaining model quality. Training
+proceeds for 3 epochs with a batch size of 1 and gradient accumulation over 8
+steps, yielding an effective batch size of 8. We use a learning rate of 2e-4
+with cosine annealing and 10% warmup, training in bfloat16 precision.
+
+The UnslothVisionDataCollator handles the multimodal nature of the data,
+processing images through the vision encoder and text through the language
+model tokenizer, then combining the resulting tokens appropriately. The maximum
+sequence length is set to 4096-8192 tokens depending on the model architecture,
+accommodating both images and text context.
+
+
+3.2 Teacher-Student Distillation
+
+While supervised fine-tuning produces functional verifiers, we observed that
+the quality of reasoning in the original labels varied. Some labels provided
+detailed explanations while others offered only brief justifications. To
+improve reasoning quality, we implemented a teacher-student distillation
+approach using GPT-4 as the teacher model.
+
+The distillation process proceeds in two stages. In the first stage, we process
+each training sample through GPT-4 Vision, providing the BEFORE and AFTER
+screenshots along with the task context. GPT-4 generates detailed reasoning
+following a structured chain-of-thought format: (1) describe the BEFORE state,
+(2) describe the AFTER state, (3) identify what changed between them, (4)
+evaluate whether the change aligns with the subgoal, and (5) provide the final
+verdict with explanation.
+
+In the second stage, we continue training the supervised fine-tuned model on
+these GPT-4 generated responses. We use a lower learning rate of 1e-4 to
+preserve the knowledge acquired during supervised fine-tuning while adapting
+to the more detailed reasoning style. The maximum sequence length is increased
+to 8192 tokens to accommodate the longer explanations.
+
+The hypothesis underlying this approach is that training on high-quality,
+structured reasoning will improve the student model's ability to perform
+similar reasoning at inference time. Even if the final classification accuracy
+remains similar, the improved reasoning provides better interpretability and
+may generalize better to novel situations.
+
+
+3.3 Data Corruption for Negative Sample Generation
+
+The original dataset exhibits significant class imbalance, with approximately
+80% positive samples and only 20% negative samples. This imbalance can lead to
+models that are biased toward predicting success, resulting in high false
+positive rates. To address this issue, we developed trajectory-aware data
+corruption techniques that generate realistic negative samples.
+
+Our corruption strategy is inspired by the observation that GUI interactions
+form trajectories: sequences of actions that progress toward a goal. A correct
+trajectory might be represented as states A → B → C → D → E, where each
+transition represents a successful action. By corrupting individual transitions
+—replacing the correct AFTER state with an incorrect one—we create examples of
+what failure looks like.
+
+We implement four corruption types, each simulating a different failure mode.
+Cross-task corruption replaces the AFTER image with an image from a completely
+different task, simulating catastrophic navigation errors such as opening the
+wrong application. Wrong-step-future corruption uses an AFTER image from a
+later step in the same task, simulating cases where the agent appears to skip
+required intermediate steps. Wrong-step-past corruption uses an AFTER image
+from an earlier step, simulating regression or undoing of progress. No-change
+corruption sets the AFTER image equal to the BEFORE image, simulating actions
+that have no effect.
+
+Each corruption type is applied with equal probability (25%), and the corrupted
+samples are labeled as negative with generated rejection reasons appropriate to
+the corruption type. For example, cross-task corruptions receive explanations
+noting that the screen shows content unrelated to the intended subgoal, while
+no-change corruptions note that the screenshots are identical despite the
+action requiring a visible change.
+
+The corruption process calculates the number of negative samples needed to
+achieve a target ratio (50% in our experiments), generates that many corrupted
+samples, combines them with the original data, and shuffles the result. This
+produces a balanced dataset suitable for training verifiers that can reliably
+detect both success and failure.
+
+
+3.4 Direct Preference Optimization
+
+We also explored Direct Preference Optimization (DPO) as an alternative
+training approach. DPO enables training on preference pairs without requiring
+reinforcement learning, making it more stable and computationally efficient
+than traditional RLHF approaches.
+
+For action verification, we construct preference pairs where the "chosen"
+response corresponds to correct verification of a genuine success, while the
+"rejected" response corresponds to incorrect acceptance of a corrupted failure.
+Both responses share the same prompt (BEFORE image, action description, and
+subgoal) but differ in the AFTER image and corresponding verdict.
+
+However, our experiments with DPO on vision-language models encountered
+significant technical challenges. The multimodal nature of the data created
+issues with image serialization in multiprocessing, substantially slowing
+training. Memory requirements were also higher than expected due to the need
+to process both chosen and rejected images. While we have implemented the DPO
+infrastructure, we consider this approach experimental pending resolution of
+these technical issues.
+
+
+================================================================================
+                           4. IMPLEMENTATION
+================================================================================
+
+4.1 Model Architectures
+
+We implement our training approaches on two families of vision-language models
+from the Qwen series. The Qwen3-VL family represents the latest generation,
+available in 4B and 8B parameter variants. The Qwen2.5-VL family represents
+the previous generation, available in 3B and 7B parameter variants. All models
+are loaded with 4-bit quantization and fine-tuned using LoRA adapters, enabling
+training on a single GPU with reasonable memory requirements.
+
+The choice of multiple model sizes and generations enables systematic study of
+how model capacity and architecture affect verification performance. We expect
+larger models to perform better due to increased representational capacity, and
+newer architectures to benefit from improved vision-language alignment.
+
+4.2 Training Pipeline
+
+The complete training pipeline consists of several stages. The first stage is
+environment setup, which installs dependencies and applies necessary patches
+to the Unsloth library for VLM compatibility. The second stage is data
+preparation, which filters and formats the training data, ensuring all images
+are accessible and samples are properly structured. The third stage is
+supervised fine-tuning, which trains the base model on labeled verification
+examples. The fourth stage is optional distillation, which generates GPT-4
+responses and continues training on these enhanced labels. The fifth stage is
+optional data corruption, which generates balanced datasets for training on
+negative examples. The sixth stage is evaluation, which tests trained models
+on held-out validation data.
+
+Each stage is implemented as a standalone Python script with command-line
+arguments for configuration. This modular design enables experimentation with
+different combinations of training approaches.
+
+4.3 Environment Requirements
+
+Training requires several patches to the Unsloth library for proper VLM
+support. The first patch addresses missing psutil imports in the compiler
+module. The second patch corrects incorrect VLM detection logic in the RL
+module. The third patch prevents the default data collator from overriding
+the specialized VLM collator. These patches are automatically applied by our
+setup script, which also installs all required dependencies including PyTorch,
+Unsloth, TRL, Transformers, Datasets, and Pillow.
+
+
+================================================================================
+                         5. EXPERIMENTAL DESIGN
+================================================================================
+
+5.1 Training Configurations
+
+All models are trained using consistent hyperparameters to enable fair
+comparison. The LoRA configuration uses rank 16 and alpha 16, targeting all
+attention and feed-forward projections. Training proceeds for 3 epochs with
+batch size 1 and gradient accumulation 8, yielding an effective batch size of
+8. The learning rate is 2e-4 for supervised fine-tuning and 1e-4 for
+distillation. We use cosine learning rate scheduling with 10% warmup and train
+in bfloat16 precision for computational efficiency.
+
+5.2 Models Trained
+
+We have trained the following model variants:
+
+Qwen3-VL Family:
+- Qwen3-VL-4B with supervised fine-tuning
+- Qwen3-VL-4B with distillation
+- Qwen3-VL-8B with supervised fine-tuning
+- Qwen3-VL-8B with distillation
+
+Qwen2.5-VL Family:
+- Qwen2.5-VL-3B with supervised fine-tuning
+- Qwen2.5-VL-3B with distillation
+- Qwen2.5-VL-7B with supervised fine-tuning
+
+This collection of models enables comparison across model sizes, architectures,
+and training approaches.
+
+5.3 Evaluation Protocol
+
+Models are evaluated on held-out validation data using a standardized protocol.
+For each sample, we provide the BEFORE and AFTER images along with the task
+context, generate the model's response using greedy decoding, and extract the
+predicted verdict. The primary metric is Success Rate on Trajectory validation
+(SR_Traj), defined as the percentage of samples where the predicted verdict
+matches the ground truth.
+
+Additional metrics include average output token count (measuring response
+verbosity), per-class accuracy (measuring performance on positive vs negative
+samples separately), and qualitative analysis of reasoning quality.
+
+Comprehensive evaluation on extended test sets is planned and will be added
+to this document upon completion.
+
+
+================================================================================
+                           6. DISCUSSION
+================================================================================
+
+6.1 Design Decisions
+
+Several key design decisions shape our approach. The choice of LoRA over full
+fine-tuning reflects practical constraints: 4-bit quantization with LoRA
+enables training large VLMs on single GPUs while maintaining quality. The
+specific LoRA configuration (rank 16, targeting all projection matrices) was
+chosen based on prior work showing this configuration works well for
+instruction-following tasks.
+
+The distillation approach using GPT-4 as teacher was motivated by the
+observation that human labels varied in reasoning quality. By training on
+GPT-4's structured chain-of-thought responses, we aim to improve the student
+model's reasoning ability. The lower learning rate during distillation helps
+preserve the classification ability learned during supervised fine-tuning.
+
+The trajectory-aware corruption strategy was designed to generate realistic
+negative examples. Unlike random image swapping, our corruption types simulate
+specific failure modes that might occur in real agent deployments: wrong
+applications opening, steps being skipped, progress being undone, or actions
+having no effect.
+
+6.2 Trade-offs
+
+We anticipate several trade-offs that our evaluation will quantify. First,
+there is likely a trade-off between model size and computational cost: larger
+models may perform better but require more resources for training and
+inference. Second, distillation may trade some classification accuracy for
+improved reasoning quality, particularly in smaller models with limited
+capacity. Third, training on balanced data may reduce false positives at the
+cost of some reduction in true positive rate.
+
+6.3 Limitations
+
+Several limitations should be acknowledged. The training data comes from
+mobile device recordings and may not generalize to desktop interfaces or
+different mobile platforms. The corruption strategy, while trajectory-aware,
+generates synthetic negatives that may not capture all real failure modes.
+The DPO approach remains experimental due to technical challenges with
+multimodal training.
+
+Future work should address these limitations through collection of more diverse
+training data, development of additional corruption strategies, and resolution
+of the multimodal DPO challenges.
+
+
+================================================================================
+                           7. CONCLUSION
+================================================================================
+
+This research presents a comprehensive methodology for training vision-language
+models as GUI action verifiers. We have developed and implemented multiple
+training approaches including supervised fine-tuning with LoRA, teacher-student
+distillation using GPT-4, and trajectory-aware data corruption for balanced
+training. The complete pipeline includes environment setup, data processing,
+training scripts, and evaluation tools.
+
+We have trained verifiers based on the Qwen3-VL (4B, 8B) and Qwen2.5-VL (3B, 7B)
+architectures, creating a collection of models for systematic comparison.
+Comprehensive evaluation on extended test sets is underway and will provide
+insights into the trade-offs between model size, training approach, and
+verification performance.
+
+The verification capability developed here is a crucial component for building
+reliable autonomous GUI agents. By accurately determining whether actions
+succeed, agents can detect errors, plan recovery strategies, and confirm task
+completion—capabilities essential for deployment in real-world applications.
+
+
+================================================================================
+                             8. REFERENCES
+================================================================================
+
+[To be completed]
+
+1. Qwen-VL: A Versatile Vision-Language Model for Understanding, Localization,
+   Text Reading, and Beyond. Alibaba Group, 2023.
+
+2. LoRA: Low-Rank Adaptation of Large Language Models. Hu et al., ICLR 2022.
+
+3. Direct Preference Optimization: Your Language Model is Secretly a Reward
+   Model. Rafailov et al., NeurIPS 2023.
+
+4. Training Language Models to Follow Instructions with Human Feedback.
+   Ouyang et al., NeurIPS 2022.
+
+5. Unsloth: Efficient Fine-tuning for Large Language Models.
+   https://github.com/unslothai/unsloth
+
+
+================================================================================
+                              APPENDIX A
+                         ENVIRONMENT SETUP
+================================================================================
+
+To replicate this research, the following environment setup is required. First,
+clone the repository and navigate to the project directory. Then execute the
+setup_environment.sh script, which installs all required dependencies including
+PyTorch, Unsloth, TRL, Transformers, and Pillow.
+
+The setup script also applies necessary patches to the Unsloth library for
+vision-language model training. These patches address three issues: missing
+psutil imports in the compiler module, incorrect VLM detection in the RL
+module, and data collator override in the dataset utilities module. Without
+these patches, VLM training will fail with various errors.
+
+After setup, verify the installation by importing the FastModel class from
+Unsloth. Model training can then proceed using the provided scripts in the
+SFT and Teacher_Student_Distill directories.
+
+
+================================================================================
+                              APPENDIX B
+                          CODE REPOSITORY
+================================================================================
+
+The complete code for this research is available at:
+https://github.com/pockyitachi/Q-Verifier.git
+
+Directory Structure:
+
+verifier_training/
+├── setup_environment.sh       - Environment setup script
+├── SFT/                       - Supervised fine-tuning code
+│   ├── train_verifier.py      - Main training script
+│   ├── test_verifier.py       - Evaluation script
+│   └── training_data_filtered/ - Training data
+├── Teacher_Student_Distill/   - Distillation code
+│   ├── generate_gpt_data.py   - GPT-4 response generation
+│   └── train_distilled.py     - Distillation training
+├── Data_Corruption/           - Data corruption code
+│   └── generate_corruptions.py - Corruption generation
+└── DPO/                       - DPO experiments (experimental)
+    ├── generate_dpo_pairs.py  - Preference pair generation
+    └── train_dpo.py           - DPO training
+
+
+================================================================================
+                              APPENDIX C
+                     RESULTS (TO BE COMPLETED)
+================================================================================
+
+[This section will be populated with comprehensive evaluation results upon
+completion of extended testing.]
+
+Planned evaluation:
+- Performance comparison across all model variants
+- Analysis of accuracy vs model size
+- Comparison of SFT vs distillation approaches
+- Impact of balanced training data
+- Per-class accuracy (positive vs negative samples)
+- Qualitative analysis of reasoning quality
+- Generalization to unseen tasks
+
+
+================================================================================
+                           END OF DOCUMENT
+================================================================================
+
+Last Updated: December 2025
