@@ -20,6 +20,8 @@ def main():
                         help="Base model to test")
     parser.add_argument("--data_dir", type=str, default="training_data_filtered",
                         help="Path to data directory")
+    parser.add_argument("--val_file", type=str, default="val.jsonl",
+                        help="Name of validation file (default: val.jsonl)")
     parser.add_argument("--num_samples", type=int, default=5,
                         help="Number of validation samples to test")
     parser.add_argument("--max_new_tokens", type=int, default=512,
@@ -59,7 +61,7 @@ def main():
     # Load validation data
     print("\n[2/3] Loading validation data...")
     
-    val_path = f"{args.data_dir}/val.jsonl"
+    val_path = f"{args.data_dir}/{args.val_file}"
     val_samples = []
     with open(val_path, 'r') as f:
         for line in f:
