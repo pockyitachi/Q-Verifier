@@ -34,16 +34,16 @@ Teacher_Student_Distill/qwen25_vl_verifier_distilled_7b/
 
 # Large archives
 *.tar.gz
-
-# Model zip files (too large)
-trained_models.zip
-qwen25_trained_models.zip
-qwen3_trained_models.zip
+*.zip
 
 # Training data images (download separately)
 **/training_data_filtered/images/
 **/training_data_filtered/images.zip
 **/training_data/images/
+Data_Corruption/corrupted_data/images/
+
+# Testing data (download separately)
+testing_data_androidworld/
 
 # Training outputs
 wandb/
