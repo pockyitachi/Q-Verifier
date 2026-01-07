@@ -82,6 +82,7 @@ Q-Verifier/
 
 ## First Time Setup
 
+### Option 1: From GitHub (code only)
 ```bash
 # Clone the repo
 git clone https://github.com/pockyitachi/Q-Verifier.git
@@ -90,12 +91,64 @@ cd Q-Verifier
 # Run setup script (installs deps + applies patches)
 chmod +x setup_environment.sh
 ./setup_environment.sh
+
+# Download and extract models (if needed)
+# Get Q-Verifier-models.zip from shared storage
+unzip Q-Verifier-models.zip -d .
+```
+
+### Option 2: From Zip Files
+```bash
+# Extract code
+unzip Q-Verifier-code.zip
+cd Q-Verifier
+
+# Run setup
+chmod +x setup_environment.sh
+./setup_environment.sh
+
+# Extract models (unzip in project root - paths are preserved)
+unzip Q-Verifier-models.zip -d .
 ```
 
 The setup script:
-1. Installs Python dependencies (torch, unsloth, trl, transformers, etc.)
+1. Installs Python dependencies from `requirements.txt`
 2. Applies patches to Unsloth for VLM support
-3. Clears compiled cache
+3. Verifies installation
+
+## Model Locations
+
+After extracting `Q-Verifier-models.zip`, models will be in these locations:
+
+```
+Q-Verifier/
+├── SFT/
+│   ├── qwen3_vl_verifier_4b/final/          # SFT Qwen3-4B
+│   ├── qwen3_vl_verifier_8b/final/          # SFT Qwen3-8B
+│   ├── qwen25_vl_verifier_3b/final/         # SFT Qwen2.5-3B
+│   ├── qwen25_vl_verifier_7b/final/         # SFT Qwen2.5-7B
+│   ├── qwen3_vl_verifier_balanced_4b/final/ # Balanced SFT 4B
+│   ├── qwen3_vl_verifier_balanced_8b/final/ # Balanced SFT 8B
+│   ├── qwen25_vl_verifier_balanced_3b/final/
+│   └── qwen25_vl_verifier_balanced_7b/final/
+│
+├── Teacher_Student_Distill/
+│   ├── qwen3_vl_verifier_distilled_4b/final/  # Distilled 4B
+│   ├── qwen3_vl_verifier_distilled_8b/final/  # Distilled 8B (base for DPO/GRPO)
+│   ├── qwen25_vl_verifier_distilled_3b/final/
+│   └── qwen25_vl_verifier_distilled_7b/final/
+│
+├── Rejection_Sampling_DPO/
+│   ├── qwen3_vl_distilled_dpo_8b_488/final/   # DPO on Distilled (82.07%)
+│   ├── qwen3_vl_sft_dpo_8b_488/final/         # DPO on SFT
+│   └── qwen3_vl_grpo_dpo_8b_stacked/final/    # GRPO→DPO stacked
+│
+└── GRPO/
+    ├── qwen3_vl_distilled_grpo_8b_1e_6/final/ # GRPO on Distilled (82.16%)
+    ├── qwen3_vl_distilled_dpo_grpo_8b/final/  # DPO→GRPO stacked (82.35%) ⭐ BEST
+    ├── qwen3_vl_distilled_dpo_grpo_4b/final/  # DPO→GRPO 4B
+    └── qwen3_vl_sft_grpo_8b_1e_6/final/       # GRPO on SFT
+```
 
 ## Quick Start
 
