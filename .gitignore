@@ -12,15 +12,26 @@
 # Intermediate checkpoints
 **/checkpoint-*/
 
-# Trained model directories (download separately)
-SFT/qwen3_vl_verifier_4b/
-SFT/qwen3_vl_verifier_8b/
-SFT/qwen25_vl_verifier_3b/
-SFT/qwen25_vl_verifier_7b/
-Teacher_Student_Distill/qwen3_vl_verifier_distilled_4b/
-Teacher_Student_Distill/qwen3_vl_verifier_distilled_8b/
-Teacher_Student_Distill/qwen25_vl_verifier_distilled_3b/
-Teacher_Student_Distill/qwen25_vl_verifier_distilled_7b/
+# ===========================================
+# ALL TRAINED MODELS (too large for GitHub)
+# ===========================================
+
+# Catch-all patterns for model directories
+**/qwen*_vl_*/
+**/final/
+**/checkpoint-*/
+
+# SFT models
+SFT/qwen*/
+
+# Distilled models  
+Teacher_Student_Distill/qwen*/
+
+# DPO models
+Rejection_Sampling_DPO/qwen*/
+
+# GRPO models
+GRPO/qwen*/
 
 # Compiled cache
 **/unsloth_compiled_cache/
@@ -37,9 +48,10 @@ Teacher_Student_Distill/qwen25_vl_verifier_distilled_7b/
 *.zip
 
 # Training data images (download separately)
-**/training_data_filtered/images/
-**/training_data_filtered/images.zip
-**/training_data/images/
+**/images/
+**/images.zip
+SFT/training_data_filtered/images/
+SFT/training_data/images/
 Data_Corruption/corrupted_data/images/
 
 # Testing data (download separately)

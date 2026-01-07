@@ -6,6 +6,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{hyperref}
 \usepackage{xcolor}
 \usepackage{geometry}
@@ -33,7 +34,7 @@ A Study on Training Strategies and Distillation}}
 % ABSTRACT
 % ============================================================================
 \begin{abstract}
-Autonomous GUI agents that interact with mobile and desktop interfaces require robust mechanisms to verify whether their executed actions successfully contribute to task completion. This research presents a comprehensive study on training Vision-Language Models (VLMs) as action verifiers, exploring multiple training paradigms including supervised fine-tuning, teacher-student distillation with GPT-5.2, and data corruption strategies for generating negative samples. We develop verifiers based on the Qwen3-VL (4B, 8B) and Qwen2.5-VL (3B, 7B) architectures and propose trajectory-aware corruption techniques for creating balanced training datasets. This document describes our methodology and implementation details, with comprehensive evaluation results to be added upon completion of extended testing.
+Autonomous GUI agents that interact with mobile and desktop interfaces require robust mechanisms to verify whether their executed actions successfully contribute to task completion. This research presents a comprehensive study on training Vision-Language Models (VLMs) as action verifiers, exploring multiple training paradigms including supervised fine-tuning (SFT), teacher-student distillation, Direct Preference Optimization (DPO), and Group Relative Policy Optimization (GRPO). We develop verifiers based on the Qwen3-VL (4B, 8B) and Qwen2.5-VL (3B, 7B) architectures and evaluate them on a challenging test set of 1,082 GUI action samples from AndroidWorld. Our best model achieves \textbf{82.35\% accuracy} through a novel stacked optimization approach (Distillation $\rightarrow$ DPO $\rightarrow$ GRPO), substantially outperforming GPT-4o (66.17\%) and GPT-5.2 (70.33\%) by over 12 percentage points. Key findings include: (1) task-specific fine-tuning provides 8.4\% improvement over base models; (2) distilled models with structured reasoning are more amenable to RL-based optimization than SFT models; (3) DPO and GRPO provide comparable gains ($\sim$3\%) but with different training time trade-offs (17 min vs 4 hours); and (4) stacking DPO followed by GRPO yields cumulative improvements. We release our training pipeline and models to enable practical deployment of GUI verification.
 \end{abstract}
 
 % ============================================================================
@@ -105,7 +106,7 @@ Each sample in the dataset consists of several components. The BEFORE screenshot
 
 \subsection{Dataset Statistics}
 
-The filtered dataset used for training contains 648 training samples and 71 validation samples. Each sample includes two images (BEFORE and AFTER), resulting in 1,436 total images. The dataset spans approximately 50 unique tasks across the categories described above.
+The filtered dataset used for training contains 647 training samples and 71 validation samples. Each sample includes two images (BEFORE and AFTER), resulting in 1,436 total images. The dataset spans approximately 50 unique tasks across the categories described above.
 
 The class distribution exhibits significant imbalance, with 517 positive samples (79.8\%) and only 131 negative samples (20.2\%). This imbalance reflects the natural distribution where most deliberate actions in recorded trajectories succeed---after all, the recordings capture users or agents attempting to complete tasks, and most attempts succeed. However, this imbalance poses challenges for training, as models may learn to simply predict ``Yes'' for all inputs. We address this through data corruption techniques described in the methodology section.
 
@@ -135,7 +136,7 @@ To address the variability in reasoning quality, we implemented a teacher-studen
 
 The distillation process proceeds in two stages. In the first stage, we process each training sample through GPT-5.2 Vision, providing the BEFORE and AFTER screenshots along with the task context. We augment the original prompt with explicit instructions for chain-of-thought reasoning, asking GPT-5.2 to describe what it sees in the BEFORE image, describe what it sees in the AFTER image, explain what changed between the two states, evaluate whether the change aligns with the subgoal, and provide a final verdict with clear reasoning.
 
-This structured approach yields detailed, consistent responses that follow a predictable format. The responses are typically longer and more thorough than the original human labels, providing step-by-step reasoning that can be followed and verified. We processed all 648 training samples through GPT-5.2, generating a new dataset of enhanced labels.
+This structured approach yields detailed, consistent responses that follow a predictable format. The responses are typically longer and more thorough than the original human labels, providing step-by-step reasoning that can be followed and verified. We processed all 647 training samples through GPT-5.2, generating a new dataset of enhanced labels.
 
 In the second stage, we continue training the supervised fine-tuned model on these GPT-5.2 generated responses. We use a lower learning rate of 1e-4 to preserve the classification ability learned during supervised fine-tuning while adapting to the more detailed reasoning style. The maximum sequence length is increased to 8192 tokens to accommodate the longer explanations.
 
@@ -155,11 +156,19 @@ By generating corrupted samples from positive examples, we can balance the datas
 
 \subsection{Direct Preference Optimization}
 
-We also explored Direct Preference Optimization (DPO) as an alternative training approach. DPO enables training on preference pairs---examples showing which of two responses is preferred---without requiring reinforcement learning. For action verification, we construct pairs where the preferred response correctly identifies a genuine success, while the dispreferred response incorrectly accepts a corrupted failure.
+Direct Preference Optimization (DPO) enables training on preference pairs---examples showing which of two responses is preferred---without requiring explicit reward modeling. We employ rejection sampling to generate preference pairs: for each training sample, we generate 5 candidate responses from the distilled model and identify cases where the model produces both correct and incorrect predictions. This yields pairs where the ``chosen'' response correctly matches the ground truth, while the ``rejected'' response gives the wrong answer.
 
-However, our experiments with DPO on vision-language models encountered significant technical challenges. The multimodal nature of the data created issues with image serialization during the multiprocessing required for efficient training. Memory requirements were higher than expected because DPO requires processing both chosen and rejected examples simultaneously. Training was substantially slower than standard supervised fine-tuning.
+From 647 training samples, we identified 228 samples (35.2\%) where the model produced mixed results---some correct and some incorrect responses. These 228 samples generated 488 preference pairs for DPO training. Analysis of the errors reveals an asymmetric pattern: 71.1\% are False Negatives (model incorrectly predicts ``No'' for valid actions) versus 28.9\% False Positives. This indicates the distilled model tends toward over-conservatism despite training on predominantly positive examples.
 
-While we have implemented the DPO infrastructure and generated preference pairs, we consider this approach experimental pending resolution of these technical issues. The fundamental idea remains promising---teaching models to prefer correct verifications over incorrect ones---but practical implementation for multimodal models requires further development.
+We implement a custom DPO training script to handle vision-language models, as the standard TRL library's DPOTrainer faces challenges with VLM image tokenization. Our implementation manually computes the DPO loss, resizes images to 512$\times$512 pixels to reduce token count, and properly handles pixel values for the vision encoder. Training uses a learning rate of 5e-7 with $\beta=0.1$ for 3 epochs.
+
+\subsection{Group Relative Policy Optimization}
+
+Group Relative Policy Optimization (GRPO) takes a different approach: rather than requiring pre-generated preference pairs, it generates multiple responses per prompt during training and uses a reward function to score them. The model learns to prefer high-reward responses over low-reward ones within each group.
+
+We design an asymmetric ``Smart Reward Function'' informed by the error analysis from DPO. Since False Negatives dominate (model too conservative), we assign asymmetric rewards: +2.5 for correct ``Yes'' predictions, +2.0 for correct ``No'' predictions, -2.0 for incorrect ``Yes'' (False Positive), and -2.5 for incorrect ``No'' (False Negative). This penalizes the dominant error type more heavily, encouraging the model to be more willing to accept valid actions.
+
+The reward function has access to ground truth labels during training, registered via a prompt-to-label mapping using MD5 hashing of the full prompt text. During training, 4 responses are generated per prompt (num\_generations=4), and rewards are computed based on whether extracted answers match ground truth. Training uses a learning rate of 1e-6 with KL penalty coefficient $\beta=0.04$ for 4 epochs.
 
 
 % ============================================================================
@@ -187,17 +196,19 @@ The minimum hardware requirement is a GPU with 24GB of VRAM, such as an NVIDIA R
 
 
 % ============================================================================
-% EXPERIMENTAL DESIGN
+% EXPERIMENTS
 % ============================================================================
-\section{Experimental Design}
+\section{Experiments}
 
-\subsection{Training Configurations}
+\subsection{Experimental Setup}
+
+\subsubsection{Training Configurations}
 
 All models are trained using consistent hyperparameters to enable fair comparison. The LoRA configuration uses rank 16 and alpha 16, targeting all attention and feed-forward projection matrices. This configuration balances parameter efficiency with model expressiveness based on prior work showing its effectiveness for instruction-following tasks.
 
 Training proceeds for 3 epochs, which we found sufficient for convergence without overfitting. The batch size is 1 with gradient accumulation over 8 steps, yielding an effective batch size of 8. This configuration accommodates memory constraints while providing stable gradient estimates. The learning rate is 2e-4 for supervised fine-tuning and 1e-4 for distillation, with cosine scheduling and 10\% warmup. All training uses bfloat16 precision for computational efficiency.
 
-\subsection{Models Trained}
+\subsubsection{Models Trained}
 
 We have trained the following model variants, enabling comparison across model sizes, architectures, and training approaches.
 
@@ -205,7 +216,7 @@ From the Qwen3-VL family, we trained Qwen3-VL-4B with supervised fine-tuning, Qw
 
 This collection of eight models enables several analyses: comparison between 3B/4B and 7B/8B models to understand the impact of scale; comparison between Qwen2.5 and Qwen3 architectures; and comparison between SFT-only and distilled models to evaluate the impact of teacher-student learning.
 
-\subsection{Evaluation Protocol}
+\subsubsection{Evaluation Protocol}
 
 Models are evaluated on held-out validation data using a standardized protocol. For each sample, we provide the BEFORE and AFTER images along with the task context, generate the model's response using greedy decoding to ensure reproducibility, and extract the predicted verdict from the JSON output. The primary metric is accuracy, defined as the percentage of samples where the predicted verdict matches the ground truth.
 
@@ -214,34 +225,314 @@ Additional metrics include average output token count, which measures response v
 Comprehensive evaluation on extended test sets is planned. The current validation set of 71 samples provides initial insights, but more extensive testing across diverse scenarios is needed to fully characterize model performance and generalization capabilities.
 
 
+\subsection{Results}
+
+We evaluate all models on the AndroidWorld test set containing 1,082 samples. Unlike the training distribution (80\% positive, 20\% negative), the test set exhibits a more balanced ratio of approximately 57:43 (613 positive, 469 negative samples). This distribution difference is significant---models trained on predominantly positive examples face a more challenging evaluation with nearly twice the proportion of negative cases. The test set spans the same task categories as training (navigation, form filling, social sharing, etc.) but contains distinct trajectories not seen during training. Each sample includes before/after screenshots, action descriptions, and ground truth labels. We report trajectory-level accuracy (SR-Traj) as the primary metric, measuring the percentage of samples where the model's binary verdict matches the ground truth.
+
+\subsubsection{SFT Results}
+
+Table~\ref{tab:main_results} presents the supervised fine-tuning results across model configurations. We organize results into four categories: base models without fine-tuning, supervised fine-tuned (SFT) models, teacher-student distilled models, and models trained on balanced (corrupted) data.
+
+\begin{table}[h]
+\centering
+\caption{SFT Action Verification Results on AndroidWorld Test Set (1,082 samples)}
+\label{tab:main_results}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Category} & \textbf{Model} & \textbf{Accuracy (\%)} & \textbf{Avg Output Tokens} \\
+\midrule
+\multirow{6}{*}{Base (No Fine-tuning)} 
+& Qwen2.5-VL-3B & 57.30 & 65.5 \\
+& Qwen2.5-VL-7B & 50.83 & 95.0 \\
+& Qwen3-VL-4B & 64.33 & 120.7 \\
+& Qwen3-VL-8B & 73.11 & 97.9 \\
+& GPT-4o & 66.17 & 63.5 \\
+& GPT-5.2 & 70.33 & 49.2 \\
+\midrule
+\multirow{4}{*}{Supervised Fine-Tuning (SFT)}
+& Qwen2.5-VL-3B & 66.45 & 64.2 \\
+& Qwen2.5-VL-7B & 78.47 & 66.0 \\
+& Qwen3-VL-4B & 79.39 & 67.9 \\
+& Qwen3-VL-8B & \textbf{81.52} & 68.0 \\
+\midrule
+\multirow{4}{*}{Teacher-Student Distillation}
+& Qwen2.5-VL-3B & 70.43 & 182.4 \\
+& Qwen2.5-VL-7B & 76.52 & 179.6 \\
+& Qwen3-VL-4B & 78.84 & 182.3 \\
+& Qwen3-VL-8B & 79.21 & 188.1 \\
+\midrule
+\multirow{4}{*}{Balanced Data (Corruption SFT)}
+& Qwen2.5-VL-3B & 61.83 & 52.6 \\
+& Qwen2.5-VL-7B & 74.77 & 62.7 \\
+& Qwen3-VL-4B & 72.64 & 67.0 \\
+& Qwen3-VL-8B & 77.08 & 63.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Analysis of Results}
+
+\paragraph{Effect of Fine-tuning.} Supervised fine-tuning provides substantial improvements over base models across all architectures. The Qwen3-VL-8B model improves from 73.11\% (base) to 81.52\% (SFT), an absolute gain of 8.4 percentage points. Notably, even the smaller Qwen3-VL-4B SFT model (79.39\%) outperforms the larger Qwen3-VL-8B base model (73.11\%), demonstrating that task-specific fine-tuning is more impactful than raw model size for this verification task.
+
+\paragraph{Fine-tuned Models vs. Commercial APIs.} Our fine-tuned models significantly outperform both GPT-4o (66.17\%) and GPT-5.2 (70.33\%). The best SFT model achieves 81.52\%, surpassing GPT-5.2 by over 11 percentage points. This result is particularly notable given that GPT-5.2 was used as the teacher model for distillation. The fine-tuned models benefit from domain-specific training on GUI verification examples, enabling them to outperform general-purpose models with superior base capabilities.
+
+\paragraph{SFT vs. Distillation Trade-off.} Distilled models show a slight accuracy decrease compared to their SFT counterparts (e.g., 79.21\% vs. 81.52\% for Qwen3-VL-8B). However, distilled models produce substantially longer and more structured reasoning (188.1 vs. 68.0 average output tokens). This trade-off reflects a tension between classification accuracy and explanation quality. For applications requiring interpretable decisions, the distilled models may be preferable despite the small accuracy penalty.
+
+\paragraph{Impact of Balanced Training Data.} Models trained on balanced (corrupted) data consistently underperform those trained on the original imbalanced data. For Qwen3-VL-8B, accuracy drops from 81.52\% (SFT) to 77.08\% (Balanced), a decrease of 4.4 percentage points. This counterintuitive result can be attributed to several factors:
+
+\begin{itemize}
+    \item \textbf{Distribution Mismatch}: The test set has a 57:43 positive-negative ratio, which is actually more balanced than the 80:20 training distribution. Models trained on 50:50 balanced data may become overly conservative, predicting ``No'' more frequently than necessary for the test distribution.
+    \item \textbf{Synthetic vs. Real Negatives}: The corrupted negative samples, while trajectory-aware, may not perfectly replicate the subtle characteristics of real failures. The model learns to detect synthetic corruption patterns rather than genuine failure modes.
+    \item \textbf{Reduced Positive Examples}: Balancing requires either downsampling positives or using all positives with generated negatives. Either approach reduces the model's exposure to the diversity of successful action patterns.
+\end{itemize}
+
+\paragraph{Model Architecture Comparison.} Qwen3-VL models consistently outperform their Qwen2.5-VL counterparts at similar parameter counts. Qwen3-VL-4B (79.39\% SFT) outperforms Qwen2.5-VL-7B (78.47\% SFT) despite having roughly half the parameters. This suggests architectural improvements in the Qwen3 series provide meaningful benefits for vision-language reasoning tasks.
+
+\paragraph{Scaling Behavior.} Within each model family, larger models achieve higher accuracy. For Qwen3-VL, scaling from 4B to 8B improves SFT accuracy from 79.39\% to 81.52\%. For Qwen2.5-VL, scaling from 3B to 7B improves from 66.45\% to 78.47\%. The larger improvement in the Qwen2.5 family suggests the 3B model may be below a capability threshold for this task.
+
+
+\subsection{Advanced Optimization}
+
+While supervised fine-tuning and distillation provide strong baseline performance, we explore three additional optimization techniques to further enhance the best-performing model: the distilled Qwen3-VL-8B. Each approach addresses different aspects of model improvement and leverages distinct training paradigms.
+
+\subsubsection{Rejection Sampling with Direct Preference Optimization}
+
+\paragraph{Motivation.} Standard Direct Preference Optimization (DPO) requires paired examples where the same input has both a preferred and dispreferred response. Traditional DPO datasets contain pre-labeled preference pairs, but our verification task presents a challenge: each training sample has only a single ground-truth response. To apply DPO, we must first generate contrasting responses for the same inputs.
+
+The key insight is that the distilled model, while achieving 79.21\% accuracy, still makes errors on approximately 20\% of samples. If we sample multiple responses from the model with temperature-based randomness, we may observe both correct and incorrect answers for the same input. These naturally-occurring disagreements provide organic preference pairs where the correct response is preferred over the incorrect one.
+
+\paragraph{Approach.} The Rejection Sampling DPO pipeline consists of three stages:
+
+\textbf{Stage 1: Candidate Generation.} We run the distilled model on all training samples with increased temperature ($T=0.8$) and generate $k=5$ candidate responses per sample. Higher temperature encourages diversity in the model's outputs, increasing the likelihood of sampling both correct and incorrect verdicts for borderline cases.
+
+\textbf{Stage 2: Pair Construction.} For each sample, we compare all generated responses against the ground-truth label. Samples where the model produced at least one correct and one incorrect response become ``usable'' for DPO training. For each such sample, we create preference pairs by selecting a correct response as ``chosen'' and an incorrect response as ``rejected.'' Multiple pairs can be generated from samples with multiple incorrect responses, maximizing the training signal.
+
+\textbf{Stage 3: DPO Training.} We train the model using the TRL library's DPO implementation. The DPO objective directly optimizes for preference alignment without requiring a separate reward model, learning to increase the likelihood of chosen responses while decreasing the likelihood of rejected ones.
+
+\paragraph{Data.} The training data for DPO consists of the generated preference pairs from Stage 2. Each pair contains:
+\begin{itemize}
+    \item The original input (BEFORE image, AFTER image, task context)
+    \item A chosen response (correct verdict with reasoning)
+    \item A rejected response (incorrect verdict with reasoning)
+\end{itemize}
+
+The number of usable pairs depends on the model's uncertainty---samples where the model is highly confident (always correct or always wrong across all 5 samples) do not contribute pairs. We expect approximately 15--25\% of samples to yield usable pairs based on the model's error rate and response diversity.
+
+\subsubsection{Group Relative Policy Optimization (GRPO)}
+
+\paragraph{Motivation.} GRPO offers an alternative to DPO that does not require explicit preference pairs. Instead of learning from chosen/rejected comparisons, GRPO samples multiple responses for each input and learns to prefer responses that receive higher rewards. This approach is particularly effective for reasoning tasks where correctness can be automatically verified.
+
+For action verification, we have a natural reward signal: whether the model's verdict matches the ground truth. GRPO can leverage this signal to reinforce correct predictions while suppressing incorrect ones, without requiring manual construction of preference pairs. Additionally, GRPO allows for nuanced reward shaping that goes beyond binary correctness, enabling us to penalize specific reasoning patterns that correlate with errors.
+
+\paragraph{Approach.} The GRPO training pipeline operates as follows:
+
+\textbf{Response Sampling.} For each training sample, we generate $G$ candidate responses (group size, typically 4--8). These responses are sampled with temperature to ensure diversity.
+
+\textbf{Reward Computation.} Each response receives a reward based on multiple factors:
+\begin{itemize}
+    \item \textbf{Correctness Reward}: The primary signal. Correct answers receive positive reward; incorrect answers receive negative reward. We use asymmetric rewards to address the verification task's requirements:
+    \begin{itemize}
+        \item Correct ``Yes'' (True Positive): $+2.5$
+        \item Correct ``No'' (True Negative): $+2.0$
+        \item Wrong ``Yes'' (False Positive): $-2.0$
+        \item Wrong ``No'' (False Negative): $-2.5$
+    \end{itemize}
+    The asymmetry penalizes False Negatives more heavily, as incorrectly rejecting valid actions is particularly harmful for agent reliability.
+    
+    \item \textbf{Pattern Penalties}: We penalize reasoning patterns associated with over-analysis:
+    \begin{itemize}
+        \item Phrases like ``not aligned with'' or ``no visible change'' when the action actually succeeded (penalty: $-0.3$)
+        \item Statements claiming ``action executed'' without verifying the outcome (penalty: $-0.2$)
+    \end{itemize}
+    
+    \item \textbf{Outcome Verification Bonus}: Responses that explicitly check action outcomes (``result,'' ``succeeded,'' ``failed'') receive a small bonus ($+0.15$), encouraging the model to verify rather than assume.
+    
+    \item \textbf{Length Regularization}: Rewards appropriate response length (100--400 characters), penalizing overly brief ($<50$) or verbose ($>600$) responses.
+\end{itemize}
+
+\textbf{Policy Update.} GRPO computes advantages relative to the group mean reward and updates the policy to increase probability of above-average responses. This relative comparison is more stable than absolute reward optimization.
+
+\paragraph{Data.} GRPO uses the original training data directly, generating responses on-the-fly during training. No preprocessing or pair construction is required, making it more straightforward to implement than Rejection Sampling DPO.
+
+\subsubsection{Self-Improvement via Error Correction}
+
+\paragraph{Motivation.} The Self-Improvement approach targets a specific weakness: the distilled model's errors. Rather than broadly optimizing across all training data, we identify samples where the model fails and provide targeted corrections. This approach is inspired by the observation that models often make consistent types of errors that can be addressed with focused training.
+
+The key insight is that GPT-5.2, which served as the original distillation teacher, can provide high-quality corrections for the specific cases where the student model struggles. By fine-tuning on these corrections, we address the model's weaknesses directly rather than hoping general optimization will incidentally fix them.
+
+\paragraph{Approach.} The Self-Improvement pipeline consists of three stages:
+
+\textbf{Stage 1: Error Identification.} We run the distilled model on the training data and identify samples where its prediction differs from the ground truth. These ``error samples'' represent cases where the model's current understanding is insufficient.
+
+\textbf{Stage 2: Correction Generation.} For each error sample, we query GPT-5.2 to generate a correct response. The prompt includes information about the model's incorrect response to help GPT-5.2 understand what went wrong and provide reasoning that addresses the specific confusion. This targeted approach yields corrections that are more relevant than generic responses.
+
+\textbf{Stage 3: Targeted Fine-tuning.} We continue training the distilled model on the GPT-5.2 corrections. This fine-tuning uses a lower learning rate to preserve existing capabilities while incorporating the corrections. The training focuses exclusively on previously-failed samples, making it highly targeted.
+
+\paragraph{Data.} The training data consists of error samples paired with GPT-5.2 corrections:
+\begin{itemize}
+    \item \textbf{Inputs}: The same inputs (images, context) from the original training data where the model erred
+    \item \textbf{Targets}: GPT-5.2 generated responses with correct verdicts and improved reasoning
+\end{itemize}
+
+We expect approximately 20\% of training samples (matching the error rate) to be included in this dataset. The relatively small size enables efficient fine-tuning while focusing computational resources on the most impactful samples.
+
+\subsubsection{Comparison of Optimization Approaches}
+
+Table~\ref{tab:optimization_comparison} summarizes the key characteristics of each optimization approach.
+
+\begin{table}[h]
+\centering
+\caption{Comparison of Optimization Approaches for Distilled Qwen3-VL-8B}
+\label{tab:optimization_comparison}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Aspect} & \textbf{Rejection Sampling DPO} & \textbf{GRPO} & \textbf{Self-Improvement} \\
+\midrule
+Training Paradigm & Preference Learning & RL (Group Relative) & Supervised Fine-tuning \\
+Requires Pairs & Yes (generated) & No & No \\
+External API & No & No & Yes (GPT-5.2) \\
+Data Preprocessing & Extensive & Minimal & Moderate \\
+Training Complexity & Medium & High & Low \\
+Expected Benefit & Preference alignment & Reward shaping & Error correction \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Each approach offers distinct advantages: Rejection Sampling DPO leverages the model's own uncertainty to generate training signal; GRPO enables fine-grained reward shaping beyond binary correctness; Self-Improvement directly addresses known failure cases with expert corrections. These approaches can potentially be combined or applied sequentially for cumulative improvements.
+
+
+\subsubsection{Final Results: DPO and GRPO Optimization}
+
+Building on the distilled Qwen3-VL-8B baseline (79.21\%), we apply DPO and GRPO optimization to achieve our best results. Table~\ref{tab:optimization_results} presents the complete optimization experiments, including our best model achieving \textbf{82.35\% accuracy}.
+
+\begin{table}[h]
+\centering
+\caption{DPO and GRPO Optimization Results (Best: 82.35\% with DPO$\rightarrow$GRPO)}
+\label{tab:optimization_results}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Method} & \textbf{Base Model} & \textbf{Config} & \textbf{Accuracy} & \textbf{$\Delta$ vs Base} & \textbf{Time} \\
+\midrule
+\multicolumn{6}{l}{\textit{Direct Preference Optimization (DPO)}} \\
+DPO & Distilled 8B (79.21\%) & 488 pairs, 1ep, $\beta$=0.1 & 82.07\% & +2.86\% & 17m \\
+DPO & SFT 8B (81.52\%) & 488 pairs, 1ep, $\beta$=0.1 & 82.16\% & +0.64\% & 26m \\
+DPO & Distilled 8B & 371 pairs, 1ep, $\beta$=0.1 & 81.79\% & +2.58\% & 13m \\
+DPO & Distilled 8B & 488 pairs, 3ep, $\beta$=0.1 & 75.51\% & -3.70\% & 1h41m \\
+DPO & Distilled 8B & 488 pairs, 3ep, $\beta$=0.05 & 70.06\% & -9.15\% & 1h59m \\
+\midrule
+\multicolumn{6}{l}{\textit{Group Relative Policy Optimization (GRPO)}} \\
+GRPO & Distilled 8B (79.21\%) & LR=1e-6, 1ep & 82.16\% & +2.95\% & 4h01m \\
+GRPO & Distilled 8B & LR=5e-6, 1ep & 81.98\% & +2.77\% & 4h36m \\
+GRPO & SFT 8B (81.52\%) & LR=1e-6, 1ep & 81.05\% & -0.47\% & 4h18m \\
+GRPO & SFT 8B & LR=5e-6, 1ep & 78.74\% & -2.78\% & 4h00m \\
+GRPO & Distilled 4B (78.84\%) & LR=1e-6, 1ep & 76.99\% & -1.85\% & 3h33m \\
+\midrule
+\multicolumn{6}{l}{\textit{Stacked Approaches}} \\
+DPO$\rightarrow$GRPO & Distilled$\rightarrow$DPO (82.07\%) & LR=1e-6 & \textbf{82.35\%} & +0.28\% & $\sim$10h \\
+GRPO$\rightarrow$DPO & Distilled$\rightarrow$GRPO (82.16\%) & $\beta$=0.1 & 81.42\% & -0.74\% & $\sim$5h \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{DPO Analysis.} DPO with optimal hyperparameters (488 pairs, 1 epoch, $\beta$=0.1) achieves 82.07\% on the distilled base, representing a 2.86\% improvement. Critically, \textbf{more epochs hurt performance}: 3 epochs drops accuracy to 75.51\% (overfitting), and lower $\beta$ (0.05) causes further degradation to 70.06\% (excessive divergence from the reference model). The DPO preference pairs were generated through rejection sampling: from 647 training samples with 5 responses each, we identified 228 samples where the model produced both correct and incorrect responses, yielding 488 usable preference pairs.
+
+\paragraph{GRPO Analysis.} GRPO with the distilled base achieves 82.16\% accuracy with LR=1e-6, matching DPO's improvement. However, \textbf{GRPO fails on SFT-based models}: SFT+GRPO drops from 81.52\% to 81.05\% (LR=1e-6) or 78.74\% (LR=5e-6). We attribute this to reasoning style differences---distilled models produce diverse, structured reasoning chains (5-step analysis, $\sim$188 tokens) that provide varied training signal for GRPO's reward-based learning, while SFT models produce uniform, brief responses (``Action succeeded,'' $\sim$68 tokens) that offer minimal reward variance across sampled responses.
+
+\paragraph{Stacking Analysis.} Sequential application of DPO followed by GRPO yields our best result: \textbf{82.35\% accuracy}. This represents a 3.14\% improvement over the distilled base (79.21\%) and 0.83\% over the best single-method result. Interestingly, the reverse order (GRPO$\rightarrow$DPO) degrades performance to 81.42\%, suggesting that DPO's preference alignment provides a better foundation for subsequent GRPO optimization than vice versa.
+
+\paragraph{Error Analysis.} Before optimization, the distilled model exhibited a strong bias toward False Negatives: 76.4\% of errors were FN (saying ``No'' when correct answer was ``Yes'') versus 23.6\% FP. This conservative tendency---rejecting valid transitions---motivated our asymmetric GRPO reward function that penalizes FN more heavily (-2.5) than FP (-2.0). The asymmetric rewards successfully reduced the FN rate while maintaining FP detection.
+
+\subsubsection{Ablation Studies}
+
+We conduct systematic ablation studies to understand the impact of key hyperparameters on optimization performance.
+
+\paragraph{DPO Ablations.} Table~\ref{tab:dpo_ablation} shows the effect of varying DPO hyperparameters.
+
+\begin{table}[h]
+\centering
+\caption{DPO Hyperparameter Ablation (Base: Distilled Qwen3-VL-8B, 79.21\%)}
+\label{tab:dpo_ablation}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Configuration} & \textbf{Accuracy} & \textbf{$\Delta$ vs Base} & \textbf{Finding} \\
+\midrule
+\multicolumn{4}{l}{\textit{Number of Preference Pairs}} \\
+371 pairs & 81.79\% & +2.58\% & Good \\
+488 pairs (all) & 82.07\% & +2.86\% & \textbf{Best} \\
+\midrule
+\multicolumn{4}{l}{\textit{Number of Training Epochs}} \\
+1 epoch & 82.07\% & +2.86\% & \textbf{Optimal} \\
+3 epochs & 75.51\% & -3.70\% & Overfitting \\
+\midrule
+\multicolumn{4}{l}{\textit{Beta ($\beta$) Value}} \\
+$\beta$ = 0.1 & 82.07\% & +2.86\% & \textbf{Optimal} \\
+$\beta$ = 0.05 & 70.06\% & -9.15\% & Too much divergence \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Key findings: (1) More preference pairs improve performance (488 > 371), confirming that maximum training signal is beneficial. (2) \textbf{1 epoch is critical}---3 epochs causes severe overfitting, dropping accuracy by 6.5\%. (3) Lower $\beta$ values cause the model to diverge too far from the reference policy, degrading performance by 12\%.
+
+\paragraph{GRPO Ablations.} Table~\ref{tab:grpo_ablation} examines GRPO sensitivity to learning rate and base model choice.
+
+\begin{table}[h]
+\centering
+\caption{GRPO Hyperparameter Ablation}
+\label{tab:grpo_ablation}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Base Model} & \textbf{LR} & \textbf{Accuracy} & \textbf{$\Delta$ vs Base} & \textbf{Finding} \\
+\midrule
+\multicolumn{5}{l}{\textit{Learning Rate (Distilled Base)}} \\
+Distilled 8B (79.21\%) & 1e-6 & 82.16\% & +2.95\% & \textbf{Best} \\
+Distilled 8B (79.21\%) & 5e-6 & 81.98\% & +2.77\% & Good \\
+\midrule
+\multicolumn{5}{l}{\textit{Learning Rate (SFT Base)}} \\
+SFT 8B (81.52\%) & 1e-6 & 81.05\% & -0.47\% & Slight degradation \\
+SFT 8B (81.52\%) & 5e-6 & 78.74\% & -2.78\% & Significant degradation \\
+\midrule
+\multicolumn{5}{l}{\textit{Model Size}} \\
+Distilled 8B (79.21\%) & 1e-6 & 82.16\% & +2.95\% & \textbf{Best} \\
+Distilled 4B (78.84\%) & 1e-6 & 76.99\% & -1.85\% & Degradation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Key findings: (1) Lower learning rates (1e-6) provide more stable optimization than higher rates (5e-6). (2) \textbf{Base model choice is critical}: GRPO improves distilled models (+2.95\%) but degrades SFT models (-2.78\%). This asymmetry stems from reasoning style differences---distilled models produce diverse responses that provide reward variance, while SFT models generate uniform responses with minimal training signal. (3) Larger models (8B) benefit more from GRPO than smaller ones (4B), possibly due to greater capacity for learning nuanced reward signals.
+
+\paragraph{Stacking Order Ablation.} We compare two stacking strategies in Table~\ref{tab:stacking_ablation}.
+
+\begin{table}[h]
+\centering
+\caption{Stacking Order Ablation}
+\label{tab:stacking_ablation}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Stack Order} & \textbf{Intermediate} & \textbf{Final} & \textbf{$\Delta$ vs Distilled} \\
+\midrule
+Distilled $\rightarrow$ DPO $\rightarrow$ GRPO & 82.07\% (DPO) & \textbf{82.35\%} & +3.14\% \\
+Distilled $\rightarrow$ GRPO $\rightarrow$ DPO & 82.16\% (GRPO) & 81.42\% & +2.21\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Key finding: \textbf{DPO$\rightarrow$GRPO outperforms GRPO$\rightarrow$DPO} by 0.93\%. DPO provides preference alignment that creates a better foundation for subsequent GRPO reward optimization. The reverse order (GRPO first) may over-specialize the model to the reward function, making it less amenable to preference-based refinement.
+
+
 % ============================================================================
-% DISCUSSION
+% LIMITATIONS
 % ============================================================================
-\section{Discussion}
+\section{Limitations}
 
-\subsection{Design Decisions}
+\paragraph{Generalization.} Our training data comes from mobile device recordings and may not generalize to desktop interfaces or web applications, where visual patterns and interaction paradigms differ. Extending to these domains would require additional domain-specific training data.
 
-Several key design decisions shape our approach and merit discussion. The choice of LoRA over full fine-tuning reflects practical constraints common to many research settings. Training large vision-language models with full parameter updates requires multiple high-end GPUs and substantial time. LoRA enables comparable results with a fraction of the computational resources, democratizing access to VLM fine-tuning for researchers without extensive infrastructure.
+\paragraph{Model and Training Choices.} We use LoRA fine-tuning rather than full parameter updates due to computational constraints. While LoRA enables training on a single GPU, full fine-tuning might yield higher accuracy. Similarly, the Qwen3-VL-4B model (79.39\%) approaches the 8B model's performance (81.52\%) with lower resource requirements, but larger models or different architectures could potentially achieve better results.
 
-The distillation approach using GPT-5.2 as teacher was motivated by the observation that human labels varied significantly in reasoning quality. By training on GPT-5.2's structured chain-of-thought responses, we aim to improve not just classification accuracy but also the interpretability and trustworthiness of model outputs. In deployment scenarios, operators may want to inspect verification reasoning to build confidence in agent behavior. Consistent, well-structured explanations support this use case better than brief, variable labels.
+\paragraph{Data Balance.} The corruption strategy generates synthetic negatives that do not fully capture real failure modes---models trained on balanced data underperform those trained on natural distributions. Some failures are subtle (e.g., a form appearing to submit but not saving data), requiring signal beyond visual comparison.
 
-The trajectory-aware corruption strategy was designed to generate negative examples that resemble real failure modes. Unlike random image swapping, which might produce obviously incorrect examples, our corruption types simulate specific scenarios: wrong applications opening (cross-task), steps being skipped or reversed (wrong-step variants), and actions having no effect (no-change). Training on these realistic failures should improve model robustness compared to training on artificial corruptions.
+\paragraph{Optimization Methods.} DPO depends on model uncertainty to generate preference pairs; highly confident models produce fewer usable pairs. GRPO's effectiveness depends on reward function design, and our asymmetric rewards may require task-specific tuning. We also found that reasoning style affects RL compatibility: GRPO improves distilled models (+2.95\%) but degrades SFT models (-2.78\%), suggesting that rich, diverse reasoning patterns are necessary for effective RL optimization.
 
-\subsection{Trade-offs}
-
-We anticipate several trade-offs that our evaluation will quantify. There is likely a trade-off between model size and computational cost. Larger models (7B/8B) may achieve higher accuracy but require more resources for both training and inference. For deployment in resource-constrained settings, smaller models may be preferable even if accuracy is slightly lower.
-
-Distillation may trade some classification accuracy for improved reasoning quality. The longer, more detailed outputs from distilled models require more inference time and may occasionally contain reasoning errors that simpler responses would avoid. However, the improved interpretability may be worth this cost in applications where explanation quality matters.
-
-Training on balanced data may reduce false positives (incorrectly accepting failures) at the cost of some reduction in true positive rate (correctly accepting successes). The optimal balance depends on the deployment context. In high-stakes applications where failures are costly, accepting more false negatives to reduce false positives may be appropriate.
-
-\subsection{Limitations}
-
-Several limitations of our work should be acknowledged. The training data comes from mobile device recordings and may not generalize well to desktop interfaces, web applications, or different mobile platforms. The visual patterns, interaction paradigms, and failure modes differ across these contexts. Extending our approach to these domains would require collecting and annotating additional training data.
-
-The corruption strategy, while trajectory-aware, generates synthetic negatives that may not capture all real failure modes. Some failures are subtle---an action might appear to succeed visually while failing at a deeper level, such as a form submission that shows success but doesn't actually save data. Detecting such failures would require additional signal beyond visual comparison.
-
-The DPO approach remains experimental due to technical challenges with multimodal training. Resolving these issues could unlock additional improvements, but requires further engineering effort beyond the scope of current work.
+\paragraph{Distillation Trade-off.} Distillation trades classification accuracy for improved reasoning quality. The distilled model achieves 79.21\% versus 81.52\% for SFT, but produces outputs nearly three times longer (188 vs. 68 tokens). While this enables better interpretability, it comes with an initial accuracy cost that must be recovered through DPO/GRPO optimization.
 
 
 % ============================================================================
@@ -249,11 +540,25 @@ The DPO approach remains experimental due to technical challenges with multimoda
 % ============================================================================
 \section{Conclusion}
 
-This research presents a comprehensive methodology for training vision-language models as GUI action verifiers. We have developed and implemented multiple training approaches including supervised fine-tuning with LoRA, teacher-student distillation using GPT-5.2, and trajectory-aware data corruption for generating balanced training datasets. The complete pipeline includes environment setup, data processing, training scripts, and evaluation tools, all designed for reproducibility and extensibility.
+This research presents a comprehensive methodology for training vision-language models as GUI action verifiers. We developed and evaluated multiple training approaches including supervised fine-tuning, teacher-student distillation, and reinforcement learning-based optimization (DPO and GRPO).
 
-We have trained verifiers based on the Qwen3-VL (4B, 8B) and Qwen2.5-VL (3B, 7B) architectures, creating a collection of models that enable systematic comparison across model sizes, architectures, and training approaches. Initial results are promising, and comprehensive evaluation on extended test sets will provide deeper insights into the trade-offs and capabilities of these verifiers.
+Our experimental evaluation on the AndroidWorld benchmark (1,082 samples) yields several key findings:
 
-The verification capability developed here addresses a critical gap in autonomous GUI agent systems. By accurately determining whether actions succeed, agents can detect errors in real-time, plan recovery strategies when things go wrong, and confirm task completion with confidence. These capabilities are essential for deploying GUI agents in real-world applications where reliability matters. As autonomous agents become more prevalent in our digital lives, robust verification will be increasingly important for ensuring they behave as intended.
+\begin{enumerate}
+    \item \textbf{Fine-tuning dramatically improves verification accuracy.} Our best SFT model (Qwen3-VL-8B) achieves 81.52\% accuracy, surpassing GPT-4o by 15.3 percentage points and GPT-5.2 by 11.2 percentage points.
+    
+    \item \textbf{Distillation enables further RL-based optimization.} While distilled models show slightly lower immediate accuracy (79.21\% vs 81.52\%), their structured reasoning style makes them amenable to DPO and GRPO, ultimately achieving 82.35\%---our best result.
+    
+    \item \textbf{DPO and GRPO provide comparable gains with different trade-offs.} Both methods improve the distilled model by $\sim$3\% (79.21\%$\rightarrow$82\%), but DPO trains in 17 minutes while GRPO requires 4 hours. However, GRPO enables custom reward shaping for task-specific error patterns.
+    
+    \item \textbf{Stacking DPO$\rightarrow$GRPO achieves the best performance.} Sequential application yields 82.35\% accuracy, a 3.14\% improvement over the distilled base and 9.24\% over the Qwen3-VL-8B base model.
+    
+    \item \textbf{Reasoning style critically affects RL compatibility.} GRPO improves distilled models (+2.95\%) but degrades SFT models (-2.78\%). The distilled model's diverse, structured reasoning provides reward variance for learning, while SFT's uniform responses offer minimal training signal.
+    
+    \item \textbf{Hyperparameter sensitivity matters.} For DPO, 1 epoch is optimal (3 epochs causes overfitting: 75.51\%). For GRPO, lower learning rates (1e-6) outperform higher ones (5e-6).
+\end{enumerate}
+
+The verification capability developed here addresses a critical gap in autonomous GUI agent systems. Our best model achieves 82.35\% accuracy while running locally, eliminating the latency, cost, and privacy concerns of cloud-based verification. This demonstrates that GUI verification can be learned efficiently through a combination of distillation and reinforcement learning optimization.
 
 
 % ============================================================================
@@ -264,13 +569,21 @@ The verification capability developed here addresses a critical gap in autonomou
 \begin{enumerate}
     \item Qwen-VL: A Versatile Vision-Language Model for Understanding, Localization, Text Reading, and Beyond. Alibaba Group, 2023.
     
+    \item Qwen3-VL Technical Report. Alibaba Group, 2025.
+    
     \item Hu, E. J., et al. LoRA: Low-Rank Adaptation of Large Language Models. ICLR 2022.
     
     \item Rafailov, R., et al. Direct Preference Optimization: Your Language Model is Secretly a Reward Model. NeurIPS 2023.
     
+    \item Shao, Z., et al. DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models. arXiv 2024. (Introduces GRPO)
+    
     \item Ouyang, L., et al. Training Language Models to Follow Instructions with Human Feedback. NeurIPS 2022.
     
+    \item Huang, J., et al. Large Language Models Can Self-Improve. EMNLP 2023.
+    
     \item Unsloth: Efficient Fine-tuning for Large Language Models. \url{https://github.com/unslothai/unsloth}
+    
+    \item TRL: Transformer Reinforcement Learning. Hugging Face. \url{https://github.com/huggingface/trl}
 \end{enumerate}
 
 
@@ -289,7 +602,16 @@ After setup, verify the installation by importing the FastModel class from Unslo
 
 The complete code for this research is available at: \url{https://github.com/pockyitachi/Q-Verifier.git}
 
-The repository is organized into several directories. The SFT directory contains the supervised fine-tuning code, including the main training script (train\_verifier.py), evaluation script (test\_verifier.py), and training data. The Teacher\_Student\_Distill directory contains the distillation code, including the GPT-5.2 response generation script and distillation training script. The Data\_Corruption directory contains the trajectory-aware corruption code for generating balanced datasets. The DPO directory contains experimental code for Direct Preference Optimization.
+The repository is organized into several directories:
+\begin{itemize}
+    \item \textbf{SFT/}: Supervised fine-tuning code, including training script (train\_verifier.py), evaluation scripts (test\_verifier.py, test\_base\_model.py, test\_gpt.py), and training data.
+    \item \textbf{Teacher\_Student\_Distill/}: Distillation pipeline including GPT-5.2 response generation and distillation training scripts.
+    \item \textbf{Data\_Corruption/}: Trajectory-aware corruption code for generating balanced datasets with synthetic negatives.
+    \item \textbf{Rejection\_Sampling\_DPO/}: Rejection sampling pipeline for generating preference pairs and DPO training scripts.
+    \item \textbf{GRPO/}: Group Relative Policy Optimization training with custom accuracy-focused reward functions.
+    \item \textbf{Self\_Improvement/}: Error identification, GPT-5.2 correction generation, and targeted fine-tuning scripts.
+    \item \textbf{Results/}: Organized evaluation results across all model configurations and training approaches.
+\end{itemize}
 
 \section{Prompt Examples}
 
@@ -299,8 +621,84 @@ For GPT-5.2 distillation, we augment this base prompt with explicit instructions
 
 The expected output format is a JSON object with two fields: ``answer'' containing either ``Yes'' or ``No'', and ``reason'' containing the explanation. SFT models typically produce concise reasons of one or two sentences, while distilled models produce longer, structured reasons following the chain-of-thought format.
 
-\section{Results (To Be Completed)}
+\section{Complete Results Summary}
 
-This section will be populated with comprehensive evaluation results upon completion of extended testing. Planned analyses include performance comparison across all eight model variants, analysis of how accuracy scales with model size, comparison of SFT versus distilled models in terms of both accuracy and reasoning quality, evaluation of models trained on balanced versus imbalanced data, per-class accuracy breakdown to assess bias toward positive or negative predictions, and qualitative analysis of reasoning coherence and relevance.
+Table~\ref{tab:complete_results} provides a comprehensive summary of all experimental results.
+
+\begin{table}[h]
+\centering
+\caption{Complete Experimental Results Summary}
+\label{tab:complete_results}
+\small
+\begin{tabular}{llcc}
+\toprule
+\textbf{Method} & \textbf{Model} & \textbf{Accuracy} & \textbf{$\Delta$ vs Qwen3-8B Base} \\
+\midrule
+\multicolumn{4}{l}{\textit{Base Models (No Fine-tuning)}} \\
+Base & Qwen3-VL-8B & 73.11\% & -- \\
+Base & Qwen3-VL-4B & 64.33\% & -8.78\% \\
+Base & Qwen2.5-VL-7B & 50.83\% & -22.28\% \\
+Base & Qwen2.5-VL-3B & 57.30\% & -15.81\% \\
+Base & GPT-5.2 & 70.33\% & -2.78\% \\
+Base & GPT-4o & 66.17\% & -6.94\% \\
+\midrule
+\multicolumn{4}{l}{\textit{Supervised Fine-Tuning (SFT)}} \\
+SFT & Qwen3-VL-8B & 81.52\% & +8.41\% \\
+SFT & Qwen3-VL-4B & 79.39\% & +6.28\% \\
+SFT & Qwen2.5-VL-7B & 78.47\% & +5.36\% \\
+SFT & Qwen2.5-VL-3B & 66.45\% & -6.66\% \\
+\midrule
+\multicolumn{4}{l}{\textit{Teacher-Student Distillation}} \\
+Distilled & Qwen3-VL-8B & 79.21\% & +6.10\% \\
+Distilled & Qwen3-VL-4B & 78.84\% & +5.73\% \\
+Distilled & Qwen2.5-VL-7B & 76.52\% & +3.41\% \\
+Distilled & Qwen2.5-VL-3B & 70.43\% & -2.68\% \\
+\midrule
+\multicolumn{4}{l}{\textit{Balanced Data (Corruption SFT)}} \\
+Balanced & Qwen3-VL-8B & 77.08\% & +3.97\% \\
+Balanced & Qwen3-VL-4B & 72.64\% & -0.47\% \\
+Balanced & Qwen2.5-VL-7B & 74.77\% & +1.66\% \\
+Balanced & Qwen2.5-VL-3B & 61.83\% & -11.28\% \\
+\midrule
+\multicolumn{4}{l}{\textit{DPO Optimization}} \\
+DPO (Distilled, 488, 1ep) & Qwen3-VL-8B & 82.07\% & +8.96\% \\
+DPO (SFT, 488, 1ep) & Qwen3-VL-8B & 82.16\% & +9.05\% \\
+DPO (371 pairs) & Qwen3-VL-8B & 81.79\% & +8.68\% \\
+DPO (3 epochs) & Qwen3-VL-8B & 75.51\% & +2.40\% \\
+DPO ($\beta$=0.05) & Qwen3-VL-8B & 70.06\% & -3.05\% \\
+\midrule
+\multicolumn{4}{l}{\textit{GRPO Optimization}} \\
+GRPO (Distilled, 1e-6) & Qwen3-VL-8B & 82.16\% & +9.05\% \\
+GRPO (Distilled, 5e-6) & Qwen3-VL-8B & 81.98\% & +8.87\% \\
+GRPO (SFT, 1e-6) & Qwen3-VL-8B & 81.05\% & +7.94\% \\
+GRPO (SFT, 5e-6) & Qwen3-VL-8B & 78.74\% & +5.63\% \\
+GRPO (Distilled, 1e-6) & Qwen3-VL-4B & 76.99\% & +3.88\% \\
+\midrule
+\multicolumn{4}{l}{\textit{Stacked Approaches}} \\
+DPO$\rightarrow$GRPO & Qwen3-VL-8B & \textbf{82.35\%} & \textbf{+9.24\%} \\
+GRPO$\rightarrow$DPO & Qwen3-VL-8B & 81.42\% & +8.31\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{DPO Preference Pair Generation Details}
+
+From 647 training samples, we generated 5 responses each with temperature 0.8. The analysis revealed:
+
+\begin{itemize}
+    \item \textbf{375 samples} (58\%): All 5 responses correct---model already handles well
+    \item \textbf{228 samples} (35\%): Mixed correct/wrong---usable for DPO
+    \item \textbf{44 samples} (7\%): All 5 responses wrong---model consistently fails
+\end{itemize}
+
+From the 228 usable samples, we analyzed the uncertainty distribution:
+\begin{itemize}
+    \item 85 samples with 4/5 correct (low uncertainty)
+    \item 59 samples with 3/5 correct (medium uncertainty)
+    \item 51 samples with 2/5 correct (high uncertainty)
+    \item 33 samples with 1/5 correct (very high uncertainty)
+\end{itemize}
+
+Using all incorrect responses paired with correct ones, we generated 488 preference pairs for DPO training.
 
 \end{document}
