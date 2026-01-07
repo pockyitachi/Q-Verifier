@@ -1,0 +1,34 @@
+# Q-Verifier Requirements
+# Automatically installed by setup_environment.sh
+# Or manually: pip install -r requirements.txt
+
+# Core ML
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Efficient fine-tuning
+unsloth
+
+# Hugging Face ecosystem
+transformers>=4.45.0
+datasets>=2.14.0
+accelerate>=0.25.0
+peft>=0.7.0
+trl>=0.12.0
+bitsandbytes>=0.41.0
+safetensors
+huggingface_hub
+
+# Image processing
+Pillow>=10.0.0
+qwen-vl-utils
+
+# Utilities
+psutil
+jinja2>=3.1.0
+sentencepiece
+protobuf
+
+# API access (for distillation with GPT)
+openai
+

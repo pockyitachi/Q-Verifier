@@ -2,75 +2,85 @@
 
 Train vision-language models to verify whether GUI actions successfully contribute to task completion.
 
+## 🎯 Best Result: 82.35% Accuracy
+
+Achieved with **Distillation → DPO → GRPO** stacking on Qwen3-VL-8B, surpassing GPT-4o (66.17%) and GPT-5.2 (70.33%) by over 12 percentage points.
+
 ## Overview
 
 This project develops VLM verifiers that take a BEFORE screenshot, AFTER screenshot, action description, and subgoal, then determine whether the action made valid progress. The verifier outputs a binary verdict (Yes/No) with supporting reasoning.
 
 ## Training Pipeline
 
-| Step | Folder | Description | Status |
-|------|--------|-------------|--------|
-| **1** | `SFT/` | Supervised Fine-Tuning on trajectory data | ✅ Done |
-| **2** | `Teacher_Student_Distill/` | GPT-4 → Qwen distillation | ✅ Done |
-| **3** | `Data_Corruption/` | Generate balanced dataset with negatives | ✅ Done |
-| **4** | `DPO/` | Direct Preference Optimization | 🔬 Experimental |
+| Step | Folder | Description | Best Accuracy |
+|------|--------|-------------|---------------|
+| **1** | `SFT/` | Supervised Fine-Tuning | 81.52% |
+| **2** | `Teacher_Student_Distill/` | GPT-5.2 → Qwen distillation | 79.21% |
+| **3** | `Data_Corruption/` | Balanced dataset with negatives | 77.08% |
+| **4** | `Rejection_Sampling_DPO/` | Direct Preference Optimization | 82.07% |
+| **5** | `GRPO/` | Group Relative Policy Optimization | 82.16% |
+| **6** | `GRPO/` | DPO → GRPO Stacking | **82.35%** |
 
-## Trained Models
+## Results Summary
 
-### Qwen3-VL Models
-| Model | Type | Location |
-|-------|------|----------|
-| Qwen3-VL-4B | SFT | `SFT/qwen3_vl_verifier_4b/final/` |
-| Qwen3-VL-8B | SFT | `SFT/qwen3_vl_verifier_8b/final/` |
-| Qwen3-VL-4B | Distilled | `Teacher_Student_Distill/qwen3_vl_verifier_distilled_4b/final/` |
-| Qwen3-VL-8B | Distilled | `Teacher_Student_Distill/qwen3_vl_verifier_distilled_8b/final/` |
-
-### Qwen2.5-VL Models
-| Model | Type | Location |
-|-------|------|----------|
-| Qwen2.5-VL-3B | SFT | `SFT/qwen25_vl_verifier_3b/final/` |
-| Qwen2.5-VL-7B | SFT | `SFT/qwen25_vl_verifier_7b/final/` |
-| Qwen2.5-VL-3B | Distilled | `Teacher_Student_Distill/qwen25_vl_verifier_distilled_3b/final/` |
-| Qwen2.5-VL-7B | Distilled | `Teacher_Student_Distill/qwen25_vl_verifier_distilled_7b/final/` |
+| Method | Qwen3-VL-8B | Δ vs Base |
+|--------|-------------|-----------|
+| Base (no fine-tuning) | 73.11% | - |
+| GPT-4o | 66.17% | -6.94% |
+| GPT-5.2 | 70.33% | -2.78% |
+| SFT | 81.52% | +8.41% |
+| Distilled | 79.21% | +6.10% |
+| DPO (on Distilled) | 82.07% | +8.96% |
+| GRPO (on Distilled) | 82.16% | +9.05% |
+| **DPO → GRPO** | **82.35%** | **+9.24%** |
 
 ## Project Structure
 
 ```
-verifier_training/
+Q-Verifier/
 ├── README.md                       # This file
-├── RESEARCH_DOCUMENTATION.txt      # Detailed research documentation
-├── setup_environment.sh            # ⭐ Environment setup with patches
+├── RESEARCH_PAPER.tex              # Research paper (LaTeX)
+├── RESEARCH_PAPER.pdf              # Compiled paper
+├── setup_environment.sh            # Environment setup with patches
+├── .gitignore                      # Excludes models & images
 │
 ├── SFT/                            # Step 1: Supervised Fine-Tuning
-│   ├── train_verifier.py           # Training script (supports Qwen3 & Qwen2.5)
+│   ├── train_verifier.py           # Training script
 │   ├── test_verifier.py            # Evaluation script
-│   ├── training_data_filtered/     # Training data with images
-│   ├── qwen3_vl_verifier_4b/       # Qwen3-VL 4B model
-│   ├── qwen3_vl_verifier_8b/       # Qwen3-VL 8B model
-│   ├── qwen25_vl_verifier_3b/      # Qwen2.5-VL 3B model
-│   └── qwen25_vl_verifier_7b/      # Qwen2.5-VL 7B model
+│   ├── test_base_model.py          # Test base models
+│   ├── test_gpt.py                 # Test GPT models
+│   └── training_data_filtered/     # Training data (647 samples)
 │
 ├── Teacher_Student_Distill/        # Step 2: Distillation
-│   ├── generate_gpt_data.py        # Generate GPT-4 responses
-│   ├── train_distilled.py          # Train on GPT data
-│   ├── gpt_data/                   # GPT responses
-│   ├── qwen3_vl_verifier_distilled_4b/
-│   ├── qwen3_vl_verifier_distilled_8b/
-│   ├── qwen25_vl_verifier_distilled_3b/
-│   └── qwen25_vl_verifier_distilled_7b/
+│   ├── generate_gpt_data.py        # Generate GPT-5.2 responses
+│   └── train_distilled.py          # Train on GPT data
 │
 ├── Data_Corruption/                # Step 3: Negative Sample Generation
 │   ├── generate_corruptions.py     # Trajectory-aware corruption
-│   └── corrupted_data/             # Balanced dataset output
+│   └── README.md                   # Corruption strategy details
 │
-└── DPO/                            # Step 4: Preference Learning (Experimental)
-    ├── generate_dpo_pairs.py       # Generate preference pairs
-    └── train_dpo.py                # DPO training
+├── Rejection_Sampling_DPO/         # Step 4: DPO Training
+│   ├── generate_candidates.py      # Generate candidate responses
+│   ├── build_dpo_pairs.py          # Build preference pairs
+│   ├── train_dpo_simple.py         # Custom DPO training for VLMs
+│   └── dpo_pairs_488.jsonl         # 488 preference pairs
+│
+├── GRPO/                           # Step 5: GRPO Training
+│   ├── train_grpo.py               # GRPO with smart reward function
+│   └── README.md                   # GRPO details & reward design
+│
+├── Results/                        # All evaluation results
+│   ├── Base_Results/               # Base model results
+│   ├── SFT_Results/                # SFT results
+│   ├── Distilled_Results/          # Distillation results
+│   ├── Corruption_SFT/             # Balanced data results
+│   ├── DPO_res/                    # DPO results
+│   └── GRPO/                       # GRPO results
+│
+└── testing_data_androidworld/      # Test set (1,082 samples)
 ```
 
 ## First Time Setup
-
-**Important:** This project requires patches to Unsloth for VLM training.
 
 ```bash
 # Clone the repo
@@ -84,7 +94,7 @@ chmod +x setup_environment.sh
 
 The setup script:
 1. Installs Python dependencies (torch, unsloth, trl, transformers, etc.)
-2. Applies 3 patches to Unsloth for VLM support
+2. Applies patches to Unsloth for VLM support
 3. Clears compiled cache
 
 ## Quick Start
@@ -94,39 +104,47 @@ The setup script:
 ```bash
 cd SFT
 
-# Train Qwen3-VL-4B
-python3 train_verifier.py --model unsloth/Qwen3-VL-4B-Instruct --output_dir ./qwen3_vl_verifier_4b
-
-# Train Qwen2.5-VL-3B
-python3 train_verifier.py --model unsloth/Qwen2.5-VL-3B-Instruct --output_dir ./qwen25_vl_verifier_3b
-
-# Train Qwen2.5-VL-7B
-python3 train_verifier.py --model unsloth/Qwen2.5-VL-7B-Instruct --output_dir ./qwen25_vl_verifier_7b
+# Train Qwen3-VL-8B (best base for optimization)
+python3 train_verifier.py --model unsloth/Qwen3-VL-8B-Instruct --output_dir ./qwen3_vl_verifier_8b
 ```
 
 ### Step 2: Teacher-Student Distillation
 
 ```bash
 cd Teacher_Student_Distill
-
-# Set API key
 export OPENAI_API_KEY="sk-your-key"
 
-# Generate GPT-4 responses
+# Generate GPT-5.2 responses
 python3 generate_gpt_data.py --num_samples all
 
-# Train distilled model
-python3 train_distilled.py --base_model ../SFT/qwen25_vl_verifier_3b/final \
-                           --output_dir ./qwen25_vl_verifier_distilled_3b
+# Train distilled model (required for DPO/GRPO)
+python3 train_distilled.py --base_model ../SFT/qwen3_vl_verifier_8b/final \
+                           --output_dir ./qwen3_vl_verifier_distilled_8b
 ```
 
-### Step 3: Data Corruption (Balanced Dataset)
+### Step 3: DPO Training
 
 ```bash
-cd Data_Corruption
+cd Rejection_Sampling_DPO
 
-# Generate balanced dataset (50% positive, 50% negative)
-python3 generate_corruptions.py --target_ratio 0.5
+# Generate candidate responses (5 per sample)
+python3 generate_candidates.py
+
+# Build preference pairs
+python3 build_dpo_pairs.py
+
+# Train DPO (17 min, +2.86% accuracy)
+python3 train_dpo_simple.py --pairs_path dpo_pairs_488.jsonl --epochs 1 --beta 0.1
+```
+
+### Step 4: GRPO Training
+
+```bash
+cd GRPO
+
+# Train GRPO on distilled model (4h, +2.95% accuracy)
+python3 train_grpo.py --base_model ../Teacher_Student_Distill/qwen3_vl_verifier_distilled_8b/final \
+                      --learning_rate 1e-6 --epochs 1
 ```
 
 ### Testing Models
@@ -134,62 +152,47 @@ python3 generate_corruptions.py --target_ratio 0.5
 ```bash
 cd SFT
 
-# Test any trained model
-python3 test_verifier.py --model_path ./qwen25_vl_verifier_3b/final --num_samples 71
-python3 test_verifier.py --model_path ../Teacher_Student_Distill/qwen25_vl_verifier_distilled_3b/final
+# Test any model
+python3 test_verifier.py --model_path ../GRPO/qwen3_vl_distilled_dpo_grpo_8b/final \
+                         --data_dir ../testing_data_androidworld \
+                         --val_file test.jsonl \
+                         --num_samples 1082
 ```
 
-## Model Usage
+## Key Findings
 
-```python
-from unsloth import FastModel
-from PIL import Image
-
-# Load model
-model, processor = FastModel.from_pretrained("./SFT/qwen25_vl_verifier_3b/final")
-model.for_inference()
-
-# Prepare input
-messages = [{"role": "user", "content": [
-    {"type": "text", "text": "Your verification prompt..."},
-    {"type": "image", "image": Image.open("before.jpg")},
-    {"type": "image", "image": Image.open("after.jpg")},
-]}]
-
-# Generate
-inputs = processor.apply_chat_template(messages, add_generation_prompt=True, 
-                                        tokenize=True, return_tensors="pt", return_dict=True)
-outputs = model.generate(**inputs.to(model.device), max_new_tokens=512)
-response = processor.decode(outputs[0], skip_special_tokens=True)
-```
+1. **Fine-tuning dramatically improves accuracy**: SFT achieves 81.52%, +8.41% over base
+2. **Distillation enables RL optimization**: Structured reasoning from distillation provides diverse training signal for DPO/GRPO
+3. **DPO and GRPO provide comparable gains**: Both improve ~3%, but DPO is faster (17min vs 4h)
+4. **Stacking works**: DPO → GRPO achieves best result (82.35%)
+5. **Reasoning style matters**: GRPO improves distilled models (+2.95%) but degrades SFT models (-2.78%)
 
 ## Supported Models
 
-| Model Family | Variants | Status |
+| Model Family | Variants | Tested |
 |--------------|----------|--------|
-| Qwen3-VL | 4B, 8B | ✅ Trained |
-| Qwen2.5-VL | 3B, 7B | ✅ Trained |
-
-## Metrics
-
-| Metric | Description |
-|--------|-------------|
-| **SR(Traj)** | Success rate on trajectory validation (correct predictions) |
-| **Tokens (Input)** | Average input tokens per sample |
-| **Tokens (Output)** | Average output tokens per sample |
+| Qwen3-VL | 4B, 8B | ✅ |
+| Qwen2.5-VL | 3B, 7B | ✅ |
+| GPT-4o | - | ✅ |
+| GPT-5.2 | - | ✅ |
 
 ## GPU Requirements
 
 | GPU | VRAM | Recommended For |
 |-----|------|-----------------|
-| A100 40GB+ | 40GB+ | 7B/8B models ⭐ |
+| A100 40GB+ | 40GB+ | 7B/8B models, GRPO ⭐ |
 | RTX 4090 | 24GB | 3B/4B models |
-| RTX 3090 | 24GB | 3B/4B models |
 
-## Documentation
+## Citation
 
-See `RESEARCH_DOCUMENTATION.txt` for detailed methodology, implementation details, and experimental design.
+If you use this code, please cite:
+```
+@misc{qverifier2025,
+  title={Q-Verifier: Training Vision-Language Models as GUI Action Verifiers},
+  year={2025}
+}
+```
 
-## Repository
+## License
 
-GitHub: https://github.com/pockyitachi/Q-Verifier.git
+MIT
