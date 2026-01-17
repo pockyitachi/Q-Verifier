@@ -1,0 +1,175 @@
+{
+    "length": 5,
+    "scenario": "DEVICE_UTILITIES",
+    "scenario_id": 1,
+    "tasks": [
+        {
+            "task_id": "General_Tool_0_ENG",
+            "instruction": "Open Google Play Store, uninstall the Alibaba.com app, then go to Settings and verify if the app is still listed under app resources.",
+            "type": "multi_app",
+            "apps": [
+                "Google Play Store",
+                "Setting"
+            ],
+            "rubrics": [
+                "Opened Google Play Store",
+                "Searched for Alibaba.com app",
+                "Initiated the uninstallation process for Alibaba.com",
+                "Confirmed uninstallation of the app",
+                "Opened device Settings",
+                "Navigated to Apps or App Management section",
+                "Verified whether Alibaba.com is still listed"
+            ],
+            "human_reference_operations": [
+                "open Play Store",
+                "tap on search bar",
+                "type 'Alibaba.com'",
+                "tap enter",
+                "tap on Alibaba.com from the list",
+                "tap 'Uninstall'",
+                "tap 'OK' to confirm uninstall",
+                "press home button",
+                "open Settings app",
+                "scroll and tap on 'Apps' or 'App Management'",
+                "scroll through app list or use search to look for 'Alibaba.com'",
+                "verify whether Alibaba.com appears in the list"
+            ]
+        },
+        {
+            "task_id": "General_Tool_2_ENG",
+            "instruction": "In the Settings app, enable 'Data Saver' mode. Open the Clock app and set an alarm for 6:00 AM.",
+            "type": "multi_app",
+            "apps": [
+                "Clock",
+                "Setting"
+            ],
+            "rubrics": [
+                "Opened the Settings app",
+                "Navigated to Network or Data usage settings",
+                "Enabled 'Data Saver' mode",
+                "Opened the Clock app",
+                "Created a new alarm",
+                "Set the alarm time to 6:00 AM",
+                "Saved the alarm"
+            ],
+            "human_reference_operations": [
+                "open Settings app",
+                "scroll and tap on 'Network & Internet' or 'Connections'",
+                "tap on 'Data Saver'",
+                "toggle 'Data Saver' to ON",
+                "press home button",
+                "open Clock app",
+                "tap on '+' or 'Add Alarm'",
+                "set time to 6:00 AM",
+                "tap 'Save' or confirm the alarm"
+            ]
+        },
+        {
+            "task_id": "Media_Entertainment_2_ENG",
+            "instruction": "Search for a relaxing soundscape video on YouTube, use the Clock app to set a timer for 3 hours, then go back to YouTube and play the video.",
+            "type": "multi_app",
+            "apps": [
+                "Clock",
+                "Youtube"
+            ],
+            "rubrics": [
+                "Opened the YouTube app",
+                "Searched for a relaxing soundscape video",
+                "Selected a suitable video",
+                "Opened the Clock app",
+                "Set a timer for 3 hours",
+                "Returned to YouTube",
+                "Played the selected relaxing soundscape video"
+            ],
+            "human_reference_operations": [
+                "open YouTube app",
+                "tap on search bar",
+                "type 'relaxing soundscape video'",
+                "tap enter",
+                "scroll and select a video",
+                "press home button",
+                "open Clock app",
+                "tap on 'Timer' tab",
+                "set timer to 3 hours",
+                "tap 'Start'",
+                "press home button",
+                "open YouTube app again",
+                "tap play on the selected video"
+            ]
+        },
+        {
+            "task_id": "Multi_Apps_2_ENG",
+            "instruction": "First, install the Triller app from the Google Play Store. After the installation, open the Triller app, then navigate to the Setting app to check current battery status, reopen the Triller app.",
+            "type": "multi_app",
+            "apps": [
+                "Triller",
+                "Setting",
+                "Google Play Store"
+            ],
+            "rubrics": [
+                "Opened Google Play Store",
+                "Searched for the Triller app",
+                "Installed the Triller app",
+                "Opened the Triller app after installation",
+                "Opened the Settings app",
+                "Navigated to Battery settings",
+                "Checked the current battery status",
+                "Reopened the Triller app"
+            ],
+            "human_reference_operations": [
+                "open Google Play Store",
+                "tap on search bar",
+                "type 'Triller'",
+                "tap enter",
+                "tap on the Triller app from the search results",
+                "tap 'Install'",
+                "wait for installation to complete",
+                "press home button",
+                "open Triller app",
+                "press home button",
+                "open Settings app",
+                "scroll and tap on 'Battery' or 'Battery Usage'",
+                "view current battery status",
+                "press home button",
+                "open Triller app again"
+            ]
+        },
+        {
+            "task_id": "Multi_Apps_3_ENG",
+            "instruction": "Arrange a business meeting using Zoom, copy the sharing text, go to WhatsApp, send the copied text to a contact, set an alarm using the Clock app at the meeting time.",
+            "type": "multi_app",
+            "apps": [
+                "Clock",
+                "WhatsApp",
+                "Zoom"
+            ],
+            "rubrics": [
+                "Opened the Zoom app",
+                "Scheduled a business meeting on Zoom",
+                "Copied the sharing text for the meeting",
+                "Opened WhatsApp",
+                "Sent the copied sharing text to a contact",
+                "Opened the Clock app",
+                "Set an alarm for the meeting time"
+            ],
+            "human_reference_operations": [
+                "open Zoom app",
+                "tap on 'Schedule' or 'New Meeting'",
+                "set meeting details like time, date, and title",
+                "tap 'Save' or 'Done'",
+                "tap 'Copy Invitation' or 'Copy Link'",
+                "press home button",
+                "open WhatsApp app",
+                "tap on the chat with the contact",
+                "paste the copied sharing text in the chat",
+                "tap send",
+                "press home button",
+                "open Clock app",
+                "tap on 'Alarm' or 'Reminder'",
+                "tap '+' to create new alarm",
+                "set alarm to the meeting time",
+                "tap 'Save'"
+            ]
+        }
+    ]
+}

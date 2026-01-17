@@ -1,0 +1,173 @@
+{
+    "length": 5,
+    "scenario": "INFORMATION_RESEARCHING",
+    "scenario_id": 2,
+    "tasks": [
+        {
+            "task_id": "General_Tool_1_ENG",
+            "instruction": "Use the LinkedIn app to search for a customer service representative position. Select a job, open Keep Notes, create a new note, record the company's name, and set the note's title to 'customer service representative'.",
+            "type": "multi_app",
+            "apps": [
+                "Keep Notes",
+                "LinkedIn"
+            ],
+            "rubrics": [
+                "Opened LinkedIn app",
+                "Searched for customer service representative position",
+                "Viewed job details for at least one listing",
+                "Opened Keep Notes app",
+                "Created a new note",
+                "Recorded the company's name in the note",
+                "Set the note title to 'customer service representative'"
+            ],
+            "human_reference_operations": [
+                "open LinkedIn app",
+                "tap on search bar",
+                "type 'customer service representative'",
+                "tap enter or search",
+                "scroll through job listings",
+                "tap on one job to view details",
+                "note the company's name",
+                "press home button",
+                "open Keep Notes app",
+                "tap '+' to create a new note",
+                "type company name in note body",
+                "tap on title field",
+                "type 'customer service representative'"
+            ]
+        },
+        {
+            "task_id": "Information_Management_1_ENG",
+            "instruction": "Using Chrome, search for the date of the next Winter Olympics opening ceremony and then set a reminder for that date in your Calendar.",
+            "type": "multi_app",
+            "apps": [
+                "Calendar",
+                "Chrome"
+            ],
+            "rubrics": [
+                "Opened Chrome browser",
+                "Searched for the date of the next Winter Olympics opening ceremony",
+                "Identified the correct date from the search results",
+                "Opened the Calendar app",
+                "Created a new reminder or event",
+                "Entered the correct date for the Winter Olympics opening ceremony",
+                "Saved the reminder or event"
+            ],
+            "human_reference_operations": [
+                "open Chrome app",
+                "tap on address bar",
+                "type 'next Winter Olympics opening ceremony date'",
+                "tap enter",
+                "view search results and note the date",
+                "press home button",
+                "open Calendar app",
+                "tap '+' or 'Create' to add new event/reminder",
+                "enter title like 'Winter Olympics Opening Ceremony'",
+                "set the date to the one found in search",
+                "tap 'Save'"
+            ]
+        },
+        {
+            "task_id": "Media_Entertainment_0_ENG",
+            "instruction": "Watch a YouTube video about fitness tracking app recommendations, check the video's description for the suggested apps, then use Google Play Store to download one of the suggested apps.",
+            "type": "multi_app",
+            "apps": [
+                "Google Play Store",
+                "Youtube"
+            ],
+            "rubrics": [
+                "Opened the YouTube app",
+                "Searched for fitness tracking app recommendations",
+                "Watched a relevant video",
+                "Checked the video's description for suggested apps",
+                "Identified at least one suggested fitness tracking app",
+                "Opened Google Play Store",
+                "Searched for and downloaded one of the suggested apps"
+            ],
+            "human_reference_operations": [
+                "open YouTube app",
+                "tap on search bar",
+                "type 'fitness tracking app recommendations'",
+                "tap enter",
+                "select and play a relevant video",
+                "tap on video description or scroll down",
+                "read list of suggested apps",
+                "note the name of one app",
+                "press home button",
+                "open Google Play Store",
+                "tap on search bar",
+                "type the app name",
+                "tap enter",
+                "tap on the app from the list",
+                "tap 'Install'"
+            ]
+        },
+        {
+            "task_id": "Media_Entertainment_1_ENG",
+            "instruction": "Utilize Chrome to research different Recipe Organizer apps, and then proceed to Google Play Store, download one of your choice.",
+            "type": "multi_app",
+            "apps": [
+                "Google Play Store",
+                "Chrome"
+            ],
+            "rubrics": [
+                "Opened Chrome browser",
+                "Searched for different Recipe Organizer apps",
+                "Reviewed information about at least one Recipe Organizer app",
+                "Identified a preferred app from the search results",
+                "Opened Google Play Store",
+                "Searched for the selected Recipe Organizer app",
+                "Downloaded the app"
+            ],
+            "human_reference_operations": [
+                "open Chrome app",
+                "tap on address bar",
+                "type 'best recipe organizer apps'",
+                "tap enter",
+                "scroll through search results",
+                "tap on an article or app list",
+                "read descriptions of several apps",
+                "note the name of one preferred app",
+                "press home button",
+                "open Google Play Store",
+                "tap on search bar",
+                "type the app name",
+                "tap enter",
+                "tap on the app in the results",
+                "tap 'Install'"
+            ]
+        },
+        {
+            "task_id": "Social_Sharing_1_ENG",
+            "instruction": "Use the CBC News app to search for Artificial Intelligence news, read an article, share it via Gmail, send to agent.benchmark.2024@gmail.com.",
+            "type": "multi_app",
+            "apps": [
+                "CBC News",
+                "Gmail"
+            ],
+            "rubrics": [
+                "Opened the CBC News app",
+                "Searched for Artificial Intelligence news",
+                "Read at least one article about Artificial Intelligence",
+                "Opened Gmail app",
+                "Composed a new email",
+                "Pasted the article link or shared content",
+                "Sent the email to agent.benchmark.2024@gmail.com"
+            ],
+            "human_reference_operations": [
+                "open CBC News app",
+                "tap on the search icon",
+                "type 'Artificial Intelligence news'",
+                "tap enter",
+                "scroll through results and tap on an article",
+                "read the article",
+                "press home button",
+                "open Gmail app",
+                "tap on 'Compose' to create a new email",
+                "enter 'linqg327@gmail.com' in the recipient field",
+                "paste the article link or content in the email body",
+                "tap 'Send'"
+            ]
+        }
+    ]
+}

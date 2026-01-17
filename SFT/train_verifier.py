@@ -35,7 +35,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size per device")
     parser.add_argument("--grad_accum", type=int, default=8, help="Gradient accumulation steps")
     parser.add_argument("--lr", type=float, default=2e-4, help="Learning rate")
-    parser.add_argument("--max_seq_length", type=int, default=4096, help="Max sequence length")
+    parser.add_argument("--max_seq_length", type=int, default=8192, help="Max sequence length")
     parser.add_argument("--output_dir", type=str, default="./qwen3_vl_verifier",
                         help="Output directory for checkpoints")
     parser.add_argument("--lora_r", type=int, default=16, help="LoRA rank")

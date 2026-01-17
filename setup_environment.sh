@@ -83,118 +83,77 @@ echo "   Site-packages: $SITE_PACKAGES"
 echo ""
 echo "[3/5] Applying Unsloth patches for VLM training..."
 
-# Patch 1: unsloth_zoo/compiler.py - Add psutil import
-COMPILER_FILE="$SITE_PACKAGES/unsloth_zoo/compiler.py"
-if [ -f "$COMPILER_FILE" ]; then
-    if grep -q "# VERIFIER_PATCH: psutil import" "$COMPILER_FILE"; then
-        echo "   ✓ compiler.py already patched"
-    else
-        python3 << 'EOF'
-import re
-import sys
-
-compiler_file = sys.argv[1] if len(sys.argv) > 1 else "$COMPILER_FILE"
-with open("$COMPILER_FILE", 'r') as f:
-    content = f.read()
-
-if 'import psutil' not in content:
-    pattern = r'(check_imports\s*=\s*""")'
-    replacement = r'\1\nimport psutil  # VERIFIER_PATCH: psutil import'
-    
-    if 'check_imports' in content:
-        content = re.sub(pattern, replacement, content, count=1)
-    else:
-        pattern = r'(import numpy as np)'
-        replacement = r'import psutil  # VERIFIER_PATCH: psutil import\n\1'
-        content = re.sub(pattern, replacement, content, count=1)
-    
-    with open("$COMPILER_FILE", 'w') as f:
-        f.write(content)
-    print("   ✓ Patched compiler.py")
-else:
-    print("   ✓ compiler.py already has psutil")
-EOF
-    fi
-else
-    echo "   ⚠ compiler.py not found - skipping patch"
-fi
-
-# Patch 2: unsloth/models/rl.py - Fix _is_vlm detection
+# Main patch: unsloth/models/rl.py - Fix _is_vlm detection bug
+# Unsloth 2026.x has code that replaces "_is_vlm = True" with "_is_vlm = False"
+# This breaks VLM training. We comment out that buggy code.
 RL_FILE="$SITE_PACKAGES/unsloth/models/rl.py"
 if [ -f "$RL_FILE" ]; then
     if grep -q "# VERIFIER_PATCH: VLM fix" "$RL_FILE"; then
         echo "   ✓ rl.py already patched"
     else
-        python3 << 'EOF'
-with open("$RL_FILE", 'r') as f:
+        # Use Python with the file path passed as argument
+        python3 - "$RL_FILE" << 'PATCH_EOF'
+import sys
+
+rl_file = sys.argv[1]
+print(f"   Patching {rl_file}...")
+
+with open(rl_file, 'r') as f:
     content = f.read()
 
-old_pattern = '''        # Temporary patch
-        try:
-            if model.config.model_type.endswith("_vlm"):
-                self._is_vlm = False
-        except:
-            pass'''
+# Pattern for Unsloth 2026.x - the buggy code that replaces _is_vlm = True with False
+old_pattern = '''        # Temporary patch _is_vlm to False
+        # as of 0.22 it only exists in sfttrainer
+        original_is_vlm_text = "self._is_vlm = True"
+        new_is_vlm_text = "self._is_vlm = False"
+        RLTrainer_source = RLTrainer_source.replace(
+            original_is_vlm_text, new_is_vlm_text
+        )'''
 
-new_pattern = '''        # VERIFIER_PATCH: VLM fix - commented out broken code
-        # # Temporary patch
-        # try:
-        #     if model.config.model_type.endswith("_vlm"):
-        #         self._is_vlm = False
-        # except:
-        #     pass'''
+new_pattern = '''        # VERIFIER_PATCH: VLM fix - commented out buggy code
+        # The original code incorrectly sets _is_vlm = False for VLM models
+        # # Temporary patch _is_vlm to False
+        # # as of 0.22 it only exists in sfttrainer
+        # original_is_vlm_text = "self._is_vlm = True"
+        # new_is_vlm_text = "self._is_vlm = False"
+        # RLTrainer_source = RLTrainer_source.replace(
+        #     original_is_vlm_text, new_is_vlm_text
+        # )
+        pass  # Keep _is_vlm = True for VLM support'''
 
 if old_pattern in content:
     content = content.replace(old_pattern, new_pattern)
-    with open("$RL_FILE", 'w') as f:
+    with open(rl_file, 'w') as f:
         f.write(content)
-    print("   ✓ Patched rl.py")
+    print("   ✓ Patched rl.py - fixed VLM detection bug")
+elif "# VERIFIER_PATCH: VLM fix" in content:
+    print("   ✓ rl.py already patched")
 else:
-    import re
-    pattern = r'# Temporary patch\s+try:\s+if model\.config\.model_type\.endswith\("_vlm"\):\s+self\._is_vlm = False\s+except:\s+pass'
-    if re.search(pattern, content):
-        content = re.sub(pattern, '# VERIFIER_PATCH: VLM fix - removed broken temporary patch', content)
-        with open("$RL_FILE", 'w') as f:
+    # Try alternative pattern (older Unsloth versions)
+    alt_pattern = 'original_is_vlm_text = "self._is_vlm = True"'
+    if alt_pattern in content:
+        # Comment out just the replacement lines
+        content = content.replace(
+            'original_is_vlm_text = "self._is_vlm = True"',
+            '# VERIFIER_PATCH: VLM fix\n        # original_is_vlm_text = "self._is_vlm = True"'
+        )
+        content = content.replace(
+            'new_is_vlm_text = "self._is_vlm = False"',
+            '# new_is_vlm_text = "self._is_vlm = False"'
+        )
+        content = content.replace(
+            'RLTrainer_source = RLTrainer_source.replace(\n            original_is_vlm_text, new_is_vlm_text\n        )',
+            '# RLTrainer_source = RLTrainer_source.replace(...)\n        pass  # Keep _is_vlm = True'
+        )
+        with open(rl_file, 'w') as f:
             f.write(content)
-        print("   ✓ Patched rl.py (regex)")
+        print("   ✓ Patched rl.py (alternative pattern)")
     else:
-        print("   ⚠ Pattern not found in rl.py - may already be patched")
-EOF
+        print("   ⚠ VLM bug pattern not found - may be a different Unsloth version")
+PATCH_EOF
     fi
 else
-    echo "   ⚠ rl.py not found - skipping patch"
-fi
-
-# Patch 3: unsloth_zoo/dataset_utils.py - Fix data collator
-DATASET_FILE="$SITE_PACKAGES/unsloth_zoo/dataset_utils.py"
-if [ -f "$DATASET_FILE" ]; then
-    if grep -q "# VERIFIER_PATCH: data collator fix" "$DATASET_FILE"; then
-        echo "   ✓ dataset_utils.py already patched"
-    else
-        python3 << 'EOF'
-with open("$DATASET_FILE", 'r') as f:
-    content = f.read()
-
-old_pattern = '''    if data_collator is None:
-        from transformers import DataCollatorForLanguageModeling
-        data_collator = DataCollatorForLanguageModeling(tokenizer, mlm = False)'''
-
-new_pattern = '''    # VERIFIER_PATCH: data collator fix - don't override VLM collator
-    # if data_collator is None:
-    #     from transformers import DataCollatorForLanguageModeling
-    #     data_collator = DataCollatorForLanguageModeling(tokenizer, mlm = False)'''
-
-if old_pattern in content:
-    content = content.replace(old_pattern, new_pattern)
-    with open("$DATASET_FILE", 'w') as f:
-        f.write(content)
-    print("   ✓ Patched dataset_utils.py")
-else:
-    print("   ⚠ Pattern not found in dataset_utils.py - may already be patched")
-EOF
-    fi
-else
-    echo "   ⚠ dataset_utils.py not found - skipping patch"
+    echo "   ⚠ rl.py not found at $RL_FILE - skipping patch"
 fi
 
 # Step 4: Clear compiled cache

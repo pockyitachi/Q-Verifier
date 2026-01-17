@@ -116,6 +116,103 @@ The setup script:
 2. Applies patches to Unsloth for VLM support
 3. Verifies installation
 
+## Troubleshooting: Unsloth VLM Bug
+
+### Problem
+
+When running training with Unsloth 2026.x, you may encounter:
+
+```
+ValueError: The dataset appears to be vision-related (contains 'image' or 'images' keys), 
+but the provided model does not seem to be a vision-language model. 
+Please check your model and dataset.
+```
+
+### Root Cause
+
+Unsloth's `rl.py` contains code that **intentionally replaces** `_is_vlm = True` with `_is_vlm = False` when compiling the SFTTrainer:
+
+```python
+# Bug in unsloth/models/rl.py (lines ~1070-1076):
+original_is_vlm_text = "self._is_vlm = True"
+new_is_vlm_text = "self._is_vlm = False"
+RLTrainer_source = RLTrainer_source.replace(original_is_vlm_text, new_is_vlm_text)
+```
+
+### Solution
+
+**Step 1: Patch the Unsloth source file**
+
+```bash
+# Find site-packages
+SITE_PACKAGES=$(python3 -c "import site; print(site.getusersitepackages())")
+RL_FILE="$SITE_PACKAGES/unsloth/models/rl.py"
+
+# Check the buggy code exists (should show lines ~1070-1076)
+grep -n "_is_vlm" "$RL_FILE" | head -5
+```
+
+You should see something like:
+```
+1072:        original_is_vlm_text = "self._is_vlm = True"
+1073:        new_is_vlm_text = "self._is_vlm = False"
+```
+
+**Step 2: Apply the patch**
+
+```bash
+python3 << 'PATCH_EOF'
+rl_file = "/home/ubuntu/.local/lib/python3.10/site-packages/unsloth/models/rl.py"
+
+with open(rl_file, 'r') as f:
+    content = f.read()
+
+old_pattern = '''        # Temporary patch _is_vlm to False
+        # as of 0.22 it only exists in sfttrainer
+        original_is_vlm_text = "self._is_vlm = True"
+        new_is_vlm_text = "self._is_vlm = False"
+        RLTrainer_source = RLTrainer_source.replace(
+            original_is_vlm_text, new_is_vlm_text
+        )'''
+
+new_pattern = '''        # VERIFIER_PATCH: VLM fix - commented out buggy code
+        # # Temporary patch _is_vlm to False
+        # # as of 0.22 it only exists in sfttrainer
+        # original_is_vlm_text = "self._is_vlm = True"
+        # new_is_vlm_text = "self._is_vlm = False"
+        # RLTrainer_source = RLTrainer_source.replace(
+        #     original_is_vlm_text, new_is_vlm_text
+        # )
+        pass  # Keep _is_vlm = True for VLM support'''
+
+if old_pattern in content:
+    content = content.replace(old_pattern, new_pattern)
+    with open(rl_file, 'w') as f:
+        f.write(content)
+    print("✓ Patched rl.py")
+else:
+    print("Pattern not found - check Unsloth version")
+PATCH_EOF
+```
+
+**Step 3: Clear compiled caches**
+
+```bash
+rm -rf ./unsloth_compiled_cache
+rm -rf /home/ubuntu/.local/lib/python3.10/site-packages/unsloth_compiled_cache
+rm -rf ~/.cache/unsloth*
+echo "✓ Caches cleared"
+```
+
+### Verification
+
+After patching, verify with:
+```bash
+grep "VERIFIER_PATCH" "$RL_FILE"
+```
+
+Training should now progress past "Setting up trainer..." without the VLM error.
+
 ## Model Locations
 
 After extracting `Q-Verifier-models.zip`, models will be in these locations:

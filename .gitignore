@@ -54,6 +54,10 @@ SFT/training_data_filtered/images/
 SFT/training_data/images/
 Data_Corruption/corrupted_data/images/
 
+# Training data directories (large, regeneratable)
+SFT/training_data_64/
+SFT/training_data_corruption_1/
+
 # Testing data (download separately)
 testing_data_androidworld/
 
@@ -69,6 +73,14 @@ logs/
 venv/
 .venv/
 env/
+venv_*/
+**/venv_*/
+
+# Android World specific
+Agent-SAMA-main/android_world/runs/
+Agent-SAMA-main/android_world/screenshot/
+Agent-SAMA-main/android_world/build/
+Agent-SAMA-main/android_world/qverifier_logs/
 
 # IDE
 .idea/
@@ -87,6 +99,12 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Screenshots and images at root
+*.jpg
+*.png
+!Results/**/*.png
+!Results/**/*.jpg
 
 # LaTeX auxiliary files
 *.aux
