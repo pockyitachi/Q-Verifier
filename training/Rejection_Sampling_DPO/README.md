@@ -5,6 +5,20 @@ training transitions in the 882-instance training source pool.** There is no
 separate active 371-, 488-, or 119-pair dataset. The 882 figure describes source
 instances, not preference pairs or complete pair coverage.
 
+The tracked file is the **public text-redacted view** of that one dataset.
+Two personal email addresses are consistently represented by `abcd@example.com`
+and `abcd2@example.com` across prompts and both completions. This changes 22
+pairs covering 12 source transitions, but does not change labels or preferences.
+Pair IDs, audit references and file hashes were recomputed. The manifest records
+the original file hashes without exposing the addresses.
+
+**The referenced private screenshots have not been redacted.** Their image hashes
+remain historical provenance, not a claim that they match this public text.
+Do not train on this text paired with the original screenshots. Training requires
+the complete private original dataset and manifest, or a separate release of
+consistently redacted text and images. Existing private experiment assets are
+unchanged; no replacement dataset is published alongside this file.
+
 | Construction | Count |
 | --- | ---: |
 | Input pair candidates | 607 |
@@ -25,8 +39,8 @@ negative need not produce a pair. No validation/test transition was added.
 
 All pairs use the frozen v9 goal/action/history prompt with dynamic image
 geometry, followed by BEFORE and AFTER. Image paths are relative to this
-`training/Rejection_Sampling_DPO/` directory and point to the existing image store; images
-are not copied. Preprocessing is RGB with an aspect-preserving 512-pixel maximum
+`training/Rejection_Sampling_DPO/` directory and identify the original image store;
+images are not included. Original preprocessing is RGB with an aspect-preserving 512-pixel maximum
 side and LANCZOS resizing, matching the recent pair-generation run.
 
 Both completions are ordered JSON objects:
@@ -48,7 +62,8 @@ is reused, the complete old rationale is retained in the outcome check, and a
 verdict-consistent task-progress conclusion is added. Both expected conditions
 are copied from the accepted target. Thus these 440 retained legacy negatives are
 **format-adapted legacy responses, not newly sampled four-field student outputs**.
-The recent 119 rejected completions retain their original four-field text.
+The recent 119 rejected completions retain their four-field text except for the
+email substitutions described above.
 No teacher API, student inference or training was run for consolidation.
 
 Each row records its source input(s), conversion, and whether the original
@@ -60,18 +75,21 @@ audit of this dataset, not an alternative preference dataset.
 
 `DPO_MANIFEST.json` pins the pair/audit files, prompt, all 526 referenced images,
 source hashes, covered IDs, label counts and the intended reference adapter.
-The freeze builder reproduced the pair and audit files byte-for-byte before
-retiring the separate source pair files. New writes must not overwrite this set.
+The freeze builder reproduced the private pair and audit files byte-for-byte
+before retiring the separate source pair files. The public manifest separately
+records the subsequent text redaction and its new hashes. New generation runs
+must not overwrite this set.
 
 From the repository root:
 
 ```bash
-python training/Rejection_Sampling_DPO/freeze_dpo_pairs.py validate
+python training/Rejection_Sampling_DPO/freeze_dpo_pairs.py validate --text-only
 python -m pytest MobileWorld/tests/test_frozen_dpo_pairs.py
 ```
 
-The first command requires the externally provisioned images. CPU tests verify
-the tracked dataset without requiring image downloads or GPU access.
+This checks text, labels, pair IDs and audit hashes without claiming image
+compatibility. Validation without `--text-only` rejects this public view before
+attempting to use the private screenshots. CPU tests require no GPUs or downloads.
 
 ## Training scope
 

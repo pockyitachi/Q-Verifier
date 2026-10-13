@@ -155,6 +155,12 @@ def validate(directory=HERE, check_images=True):
         assert pair["origins"]
     assert len({p["sample_id"] for p in data}) == manifest["unique_training_instances"]
     if check_images:
+        if manifest.get("privacy_redaction", {}).get("training_compatible") is False:
+            raise ValueError(
+                "This public text-only release cannot be paired with private screenshots. "
+                "Use --text-only for text validation, or restore the complete private "
+                "dataset and its original manifest for image validation/training."
+            )
         for path, expected in manifest["image_sha256"].items():
             assert digest(directory / path) == expected, f"Image changed or absent: {path}"
     audit = rows(directory / "dpo_pair_audit.jsonl")
@@ -296,13 +302,16 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
     check = sub.add_parser("validate")
     check.add_argument("--directory", type=Path, default=HERE)
+    check.add_argument("--text-only", action="store_true",
+                       help="Validate text, labels, pair IDs and audit hashes without validating image compatibility.")
     build = sub.add_parser("freeze")
     for name in ("legacy-pairs", "recent-pairs", "run", "data", "source882"):
         build.add_argument("--" + name, type=Path, required=True)
     build.add_argument("--output", type=Path, default=HERE)
     args = parser.parse_args()
     if args.command == "validate":
-        result = validate(args.directory)
+        result = validate(args.directory, check_images=not args.text_only)
+        result["image_validation"] = "not_requested" if args.text_only else "passed"
     else:
         result = freeze(args.legacy_pairs, args.recent_pairs, args.run, args.data, args.source882, args.output)
     print(json.dumps(result, indent=2))
