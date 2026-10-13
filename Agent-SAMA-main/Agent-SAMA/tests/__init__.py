@@ -1,2 +1,0 @@
-# Agent-SAMA Test Suite
-
