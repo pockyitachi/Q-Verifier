@@ -50,10 +50,11 @@ and [feedback formatting](MobileWorld/src/mobile_world/reflection/format.py).
 
 These are separate experimental workflows, not a claim that every released
 model went through SFT, distillation, OPSD, DPO and GRPO in that order. Legacy
-trainers and historical results remain in `SFT/`, `Teacher_Student_Distill/`,
-`Rejection_Sampling_DPO/`, `GRPO/`, and `Results/`. The previous README is retained
-as [historical documentation](docs/archive/README-before-mobileworld.md);
-its scores and settings must not be conflated with later v9 experiments.
+trainer source remains in `SFT/`, `Teacher_Student_Distill/`,
+`Rejection_Sampling_DPO/`, and `GRPO/`. Generated model exports, duplicate dataset
+copies, candidate dumps and raw experiment results are external artifacts,
+excluded from Git. Old manuscript drafts and duplicated historical documentation
+are not part of the maintained source tree.
 
 The sole maintained [DPO dataset](Rejection_Sampling_DPO/README.md) contains
 **559 four-field pairs covering 263 distinct transitions from the 882-instance

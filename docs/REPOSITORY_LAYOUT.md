@@ -21,7 +21,6 @@ Q-Verifier/
   Rejection_Sampling_DPO/   # sole frozen DPO dataset, validator and legacy tools
   datasets/                # frozen contracts tracked; row data/images external
   docs/experiments/        # compact provenance and configuration records
-  docs/archive/            # older documentation, explicitly historical
 ```
 
 ## Source and artifacts
@@ -54,6 +53,13 @@ Weights and experiment outputs belong under `MobileWorld/artifacts/` or an
 explicit path accepted by the selected script. A source-only clone does not
 contain these assets. The current server's original artifact store is retained
 at `/shared/linqiang/MobileWorld/artifacts`.
+
+Existing server copies of `Results/`, legacy `SFT/training_data*` directories,
+model/tokenizer exports, teacher response dumps and candidate dumps are also
+external assets. They remain at their original local paths, but are excluded
+from Git. A fresh source checkout requires separately provisioned data and
+weights. The sole frozen DPO pair file, its manifest/audit, dataset contracts,
+source code and MobileWorld task fixtures remain tracked.
 
 ## Tests
 

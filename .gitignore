@@ -100,8 +100,6 @@ Thumbs.db
 # Screenshots and images at root
 *.jpg
 *.png
-!Results/**/*.png
-!Results/**/*.jpg
 
 # LaTeX auxiliary files
 *.aux
@@ -161,3 +159,24 @@ Thumbs.db
 *.pem
 *.key
 *.run.lock
+
+# Retired manuscript drafts and duplicated historical documentation.
+/RESEARCH_DOCUMENTATION.txt
+/RESEARCH_PAPER.*
+/docs/archive/
+
+# Runtime assets and generated research output. Keep existing server copies
+# in place; they are not part of a source checkout. The canonical DPO dataset,
+# its manifest/audit, frozen input contracts and MobileWorld task assets remain tracked.
+/Results/
+/SFT/training_data/
+/SFT/training_data_filtered/
+/SFT/Sample_val_res/
+/SFT/test_results_*.json
+/Teacher_Student_Distill/gpt_data/
+/Teacher_Student_Distill/review_82_exact_source.txt
+/Teacher_Student_Distill/review_82_indices.json
+/Teacher_Student_Distill/scroll_explore_indices.json
+/Teacher_Student_Distill/subgoal_mismatch_indices.json
+/Data_Corruption/corrupted_data/
+/Rejection_Sampling_DPO/candidate_responses*.jsonl
