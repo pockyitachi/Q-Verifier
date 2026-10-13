@@ -63,7 +63,7 @@ Q-Verifier/
 │   ├── generate_candidates.py      # Generate candidate responses
 │   ├── build_dpo_pairs.py          # Build preference pairs
 │   ├── train_dpo_simple.py         # Custom DPO training for VLMs
-│   └── dpo_pairs_488.jsonl         # 488 preference pairs
+│   └── See ../../Rejection_Sampling_DPO/README.md for the sole current dataset
 │
 ├── GRPO/                           # Step 5: GRPO Training
 │   ├── train_grpo.py               # GRPO with smart reward function
@@ -272,20 +272,11 @@ python3 train_distilled.py --base_model ../SFT/qwen3_vl_verifier_8b/final \
                            --output_dir ./qwen3_vl_verifier_distilled_8b
 ```
 
-### Step 3: DPO Training
+### Step 3: DPO data
 
-```bash
-cd Rejection_Sampling_DPO
-
-# Generate candidate responses (5 per sample)
-python3 generate_candidates.py
-
-# Build preference pairs
-python3 build_dpo_pairs.py
-
-# Train DPO (17 min, +2.86% accuracy)
-python3 train_dpo_simple.py --pairs_path dpo_pairs_488.jsonl --epochs 1 --beta 0.1
-```
+The old pair filenames and training commands are retired. Use the sole
+[current frozen DPO dataset](../../Rejection_Sampling_DPO/README.md).
+Historical model names below refer to old experiments, not alternate datasets.
 
 ### Step 4: GRPO Training
 

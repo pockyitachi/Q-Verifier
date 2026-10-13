@@ -2,6 +2,9 @@
 """
 Simple DPO Training for VLMs
 
+Historical reference-free implementation, not the agreed standard v9 DPO loss.
+The canonical four-field dataset is deliberately rejected before loading a model.
+
 This implements DPO loss directly, avoiding TRL's complex tokenization issues.
 Uses SFT-style training but with DPO loss computation.
 """
@@ -24,6 +27,12 @@ def load_dpo_pairs(pairs_path: str) -> List[dict]:
     with open(pairs_path, 'r') as f:
         for line in f:
             pairs.append(json.loads(line))
+    if any(isinstance(pair.get('prompt'), list) for pair in pairs):
+        raise ValueError(
+            'The frozen v9 dataset requires standard DPO with a frozen reference '
+            'and complete response-token masking. This historical reference-free '
+            'trainer is not compatible; no model has been loaded.'
+        )
     return pairs
 
 
@@ -112,9 +121,10 @@ def main():
     parser = argparse.ArgumentParser(description="Simple DPO Training")
     parser.add_argument("--base_model", type=str, 
                         default="../Teacher_Student_Distill/qwen3_vl_verifier_distilled_8b/final")
-    parser.add_argument("--pairs_path", type=str, default="./dpo_pairs_488.jsonl")
+    parser.add_argument("--pairs_path", type=str, required=True,
+                        help="Explicit legacy input only; the canonical v9 set requires standard frozen-reference DPO")
     parser.add_argument("--data_dir", type=str, default="../SFT/training_data_filtered")
-    parser.add_argument("--output_dir", type=str, default="./qwen3_vl_verifier_dpo_8b_488")
+    parser.add_argument("--output_dir", type=str, default="./qwen3_vl_verifier_dpo_legacy")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--grad_accum", type=int, default=16)
     parser.add_argument("--lr", type=float, default=5e-6)
@@ -356,4 +366,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

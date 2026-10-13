@@ -18,6 +18,7 @@ import argparse
 import json
 import random
 from datetime import datetime
+from pathlib import Path
 
 
 def main():
@@ -34,6 +35,10 @@ def main():
                         help="Random seed")
     
     args = parser.parse_args()
+
+    destination = Path(args.output_path).resolve()
+    if destination.exists() or (destination.parent / "DPO_MANIFEST.json").exists():
+        parser.error("The canonical v9 DPO dataset is frozen; refusing to overwrite it or create a competing version in its directory.")
     
     random.seed(args.seed)
     
@@ -119,4 +124,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
