@@ -1,6 +1,6 @@
 # Repository layout
 
-This is the maintained project repository. Its tracked top
+`pockyitachi/Q-Verifier` is the maintained project repository. Its tracked top
 level contains four functional directories:
 
 ```text
@@ -88,13 +88,11 @@ From the repository root, with pytest installed:
 
 ```bash
 python -m pytest MobileWorld/tests/test_frozen_dpo_pairs.py
-python training/Rejection_Sampling_DPO/freeze_dpo_pairs.py validate --text-only
+python training/Rejection_Sampling_DPO/freeze_dpo_pairs.py validate
 ```
 
-Both commands validate the public text release without downloading images.
-The public email placeholders do not match the private original screenshots;
-image validation requires the complete private dataset and original manifest.
-With the MobileWorld dependencies installed, run from `MobileWorld/`:
+The validator requires all externally provisioned images; the CPU dataset tests
+do not. With the MobileWorld dependencies installed, run from `MobileWorld/`:
 
 ```bash
 PYTHONPATH=src python -m pytest tests/test_qreflector_v9_distill_dpo.py \

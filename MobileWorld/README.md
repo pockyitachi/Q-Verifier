@@ -1,9 +1,9 @@
 > **Q-Verifier support component.** This MobileWorld source is maintained inside
-> this project, including
+> [pockyitachi/Q-Verifier](https://github.com/pockyitachi/Q-Verifier), including
 > Q-Reflector integration, evaluation, and training scripts. Start with the
 > [project README](../README.md) and [local provenance/setup notes](UPSTREAM.md).
-> The upstream MobileWorld documentation follows, with setup commands adapted
-> to the included source directory.
+> The upstream MobileWorld documentation follows; its clone commands refer to
+> the original upstream project.
 
 <p align="center">
   <img src="./assets/mw_title_v1.png" alt="Banner">
@@ -90,6 +90,9 @@ While maintaining the same level of rigorous, reproducible evaluation as Android
 - [Available Commands](#-available-commands)
 - [Documentation](#-documentation)
 - [Benchmark Statistics](#-benchmark-statistics)
+- [Contact](#-contact)
+- [Acknowledgements](#-acknowledgements)
+- [Citation](#-citation)
 
 
 ---
@@ -144,7 +147,8 @@ We implement multiple complementary verification methods for reliable assessment
 ### Quick Install
 
 ```bash
-# From the repository root
+# Clone the repository
+git clone https://github.com/Tongyi-MAI/MobileWorld.git
 cd MobileWorld
 
 # Install dependencies with uv
@@ -285,10 +289,10 @@ adb shell ime enable com.android.adbkeyboard/.AdbIME
 
 > **Note:** This step is optional — MobileWorld will install it automatically if not present.
 
-### Step 4: Install MobileWorld
+### Step 4: Clone MobileWorld
 
 ```bash
-# From the repository root
+git clone https://github.com/Tongyi-MAI/MobileWorld.git
 cd MobileWorld
 uv sync
 ```
@@ -379,4 +383,51 @@ For detailed documentation, see the `docs/` directory:
   </tr>
 </table>
 
-Upstream provenance and retained license notices are in [UPSTREAM.md](UPSTREAM.md).
+
+## 📬 Contact
+
+For questions, issues, or collaboration inquiries:
+
+- **GitHub Issues**: [Open an issue](https://github.com/Tongyi-MAI/MobileWorld/issues)
+- **Email**: Contact the maintainers
+- **Discord**: [Join our Discord server](https://discord.gg/yuX6t5qs)
+- **WeChat Group**: Scan to join our discussion group
+
+<p align="center">
+  <img src="site/assets/wechat_qr.png" alt="WeChat Group QR Code" width="200">
+</p>
+
+
+## Acknowledgements
+
+We thank [Android World](https://github.com/google-research/android_world) and [Android-Lab](https://github.com/THUDM/Android-Lab) for their open source contributions.
+We also thank all the open-source contributors!
+
+<a href="https://github.com/Tongyi-MAI/MobileWorld/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Tongyi-MAI/MobileWorld" />
+</a>
+
+
+## Citation
+
+If you find MobileWorld useful in your research, please cite our paper:
+
+```bibtex
+@misc{kong2025mobileworldbenchmarkingautonomousmobile,
+      title={MobileWorld: Benchmarking Autonomous Mobile Agents in Agent-User Interactive, and MCP-Augmented Environments}, 
+      author={Quyu Kong and Xu Zhang and Zhenyu Yang and Nolan Gao and Chen Liu and Panrong Tong and Chenglin Cai and Hanzhang Zhou and Jianan Zhang and Liangyu Chen and Zhidan Liu and Steven Hoi and Yue Wang},
+      year={2025},
+      eprint={2512.19432},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2512.19432}, 
+}
+```
+
+---
+
+## ⭐ Star History
+
+If you find MobileWorld helpful, please consider giving us a star ⭐!
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Tongyi-MAI/MobileWorld&type=Date)](https://star-history.com/#Tongyi-MAI/MobileWorld&Date)

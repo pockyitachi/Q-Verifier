@@ -62,16 +62,11 @@ source pool**. The [manifest](training/Rejection_Sampling_DPO/DPO_MANIFEST.json)
 pins its construction and hashes. The latest Luna supervision accepted 849
 sources. This data consolidation did not run DPO or GRPO optimization.
 
-The tracked DPO text replaces personal email addresses with placeholders. Its
-private screenshots remain unchanged, so this public text view must not be
-paired with the original images for training; see the dataset's release notes.
-
 ## Setup
 
-From the repository root:
-
 ```bash
-cd MobileWorld
+git clone https://github.com/pockyitachi/Q-Verifier.git
+cd Q-Verifier/MobileWorld
 uv sync --extra dev
 uv run mobile-world --help
 ```
@@ -88,7 +83,7 @@ versions; they are not a consolidated results table.
 
 ## Attribution
 
-MobileWorld is derived from the upstream MobileWorld project.
+MobileWorld is derived from [Tongyi-MAI/MobileWorld](https://github.com/Tongyi-MAI/MobileWorld).
 Its upstream [Apache-2.0 license](MobileWorld/LICENSE) and source notices are
 retained. Import provenance and local modifications are documented in
 [MobileWorld/UPSTREAM.md](MobileWorld/UPSTREAM.md).
