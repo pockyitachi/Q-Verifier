@@ -1,0 +1,101 @@
+{
+  "created_utc": "2026-10-06T18:42:38.249105+00:00",
+  "status": "ready_after_adjudication_not_frozen",
+  "source": "/shared/linqiang/MobileWorld/Q-Verifier/datasets/condition_generation_v7_condition_check",
+  "dataset_version": "condition_generation_v8_adjudicated",
+  "splits": {
+    "train": {
+      "source_rows": 882,
+      "accepted_rows": 880,
+      "quarantined_rows": 2,
+      "labels": {
+        "No": 368,
+        "Yes": 512
+      },
+      "label_changes": {
+        "Yes->No": 29,
+        "No->Yes": 18
+      },
+      "reviewed_label_kept": 27
+    },
+    "val": {
+      "source_rows": 71,
+      "accepted_rows": 71,
+      "quarantined_rows": 0,
+      "labels": {
+        "Yes": 53,
+        "No": 18
+      },
+      "label_changes": {
+        "No->Yes": 3,
+        "Yes->No": 3
+      },
+      "reviewed_label_kept": 5
+    }
+  },
+  "reviewed_disputes": 87,
+  "prior_v7_visual_reviews": 5,
+  "labels_changed": 53,
+  "reviewed_labels_kept": 32,
+  "quarantined_ids": [
+    "train-243",
+    "train-589"
+  ],
+  "unadjudicated_disputes": 0,
+  "accepted_train_val_rows": 951,
+  "test_rows": 1082,
+  "test_changed_from_v7": false,
+  "test_labels_and_assistant_references_unchanged_from_v6": true,
+  "prompt_changed_from_v7": false,
+  "images_copied": 0,
+  "frozen_images_hash_verified": 4070,
+  "maximum_target_text_tokens": 373,
+  "mean_target_text_tokens": 192.53627760252365,
+  "source_artifacts_hash_verified": true,
+  "training_started": false,
+  "gpu_used": false,
+  "api_calls_this_adjudication": 0,
+  "limitations": [
+    "87 disputed records were visually adjudicated this round; the other records were not all manually re-reviewed.",
+    "Remaining accepted records inherit v7 API-assisted annotations and its five prior visual corrections.",
+    "Two app-identity conflicts are excluded, not assigned negative ground truth.",
+    "The accepted training set has 880 rows, not 882. Preserve source IDs via line maps.",
+    "Validation contains revised labels; compare models on the same validation version.",
+    "Test retains legacy references and labels; no test relabeling was performed.",
+    "This changes supervision and training membership as well as the older v6 prompt, so it is not a pure prompt ablation.",
+    "This is assistant adjudication, not independent human ground truth or a measured reliability guarantee.",
+    "The existing SFT loader pins v6 and expects 882 rows; explicit loader/preflight work is required before using v8.",
+    "Text-token checks are not a multimodal training collator preflight."
+  ],
+  "artifact_sha256": {
+    "train.jsonl": "b7a919aab32615dc01218ea6243316c9d0b286311304c92e5923bf77569643e5",
+    "train.inputs.jsonl": "5409725cdb4ae9883b445386cdaf1745d4534ce31aa2574dee30e29bed2c5955",
+    "train.references.jsonl": "281209dc5048fc224351af5af75eb7aaeb27e224703996d02920b63941acaf06",
+    "train.line_map.jsonl": "098dc87fc6b42cd5c34afd56b99fdd5cbe86cea328e383cfc80960986109dedc",
+    "train.labels.jsonl": "ce151d712bb7172117c60a1cf890829b2e92e1f6268f3166f5d25239564a6168",
+    "val.jsonl": "208fe1007f8a2589e1c2421ba62ec509d79a39e160c9a6c0bb4c8ba0caee5fb0",
+    "val.inputs.jsonl": "f510e74ed1b69c5fd2c8652c1d3ee86f8443eaefee0353cd59363efb4487d0e4",
+    "val.references.jsonl": "c7a52d7c9dbd260534758d5c8cbfe05e040767d9ca47d4c8e33401e070fe9192",
+    "val.line_map.jsonl": "63e28f92d974aa47bb5aa92427565a30136c8358af8204cde170739d2a2c43f9",
+    "val.labels.jsonl": "02ee66266e039ad93d05641944f33ca757789e32dfb8e93aaa5a5e8721955417",
+    "all_source_audit.jsonl": "c8d278197015fd5794e145617ce5db1d4b2ea751ee0c971447ee14945ce54532",
+    "quarantine.jsonl": "65d437521bad66d0d8c3d27cdb92b28ef461d4083f04bc3dd272222b7a98b92a",
+    "adjudication_decisions.jsonl": "44107cb777e774205ac3585f40bfdb0aa07e83fa0eeb3237607b570e5fed433b",
+    "review_source.snapshot.jsonl": "13e6b989fa40f4b81d9ec36d211111a1ae1d235378a6db0d7cdd90fb942def4b",
+    "prior_v7_review_decisions.jsonl": "c888d83704793d7fbfbad0b845f9424f5bd1273057f9cb79f3ced736b1c829ff",
+    "prompt_template.txt": "c2b4891b6a6cb69fd47a3ebcdd393c340b313512e49078af751b9b7d9e34bde1",
+    "test.jsonl": "28021132046dab55ee4101cf923b64489749f81e3f1428f2a1d5a4289e768e26",
+    "test.inputs.jsonl": "d257a55c754b69d934c5c396395db094002d71ec6a1cd0834ce10d715711fe58",
+    "test.labels.jsonl": "9c3800ee0070d014f90172b96ec88aefaf62f3e34ed72f39cea276d6b65a50d9",
+    "test.input_manifest.jsonl": "d3409e11902550869cf8451655c5f810ee5bb56db93f4ad3344684a928af9d08",
+    "test.source_references.jsonl": "08678fba06d4918739038f21635c310d1b4e33b1e2924e5272e05a7a6ac8c094",
+    "image_sha256.json": "0390f62b09eef0da6ff3c5af2b1e78e8d4b63ad10f1437e665002ae0ba22cdf4",
+    "adjudication_report.json": "bf5ea4c334fad05915b9f1556bd1eedc8d45f2e4ce6c604d64089fc6977ef742",
+    "status.json": "7722559e30ab92a64c7ac66106b8615064ded27fcf10bf85aa2ee8556d04a07f",
+    "README.txt": "b3444355bfe561c7707e2d3bf310879dd79f26618b0f5625b298c012ecf496b6"
+  },
+  "source_manifest_sha256": "014d0489756b19ee7a17f319feeb50ec26fe3549e3dcc2ecd9be894b05ae46de",
+  "source_frozen_sha256": "a0e2ee8e6137b82c1a3e7b06eb7d342bfa9f44a8c41f218eda6c00fcc3189301",
+  "adjudication_source_sha256": "893ee48bcb900736608a6a0cdbf4c2ee6beb23899fcc96426353a22b830b1aea",
+  "packager_sha256": "450a8b0570b611553b8f20b27d89f1147d4662ca96b58bc60973e9a80783240a"
+}

@@ -12,6 +12,7 @@ import json
 import os
 from datetime import datetime
 from PIL import Image
+from verifier_output import parse_verdict
 
 
 def main():
@@ -138,16 +139,8 @@ def main():
         total_input_tokens += input_token_count
         total_output_tokens += output_token_count
         
-        # Decode
-        generated_text = processor.decode(outputs[0], skip_special_tokens=True)
-        
-        # Extract just the assistant response
-        if "<|assistant|>" in generated_text:
-            response = generated_text.split("<|assistant|>")[-1].strip()
-        elif "assistant" in generated_text.lower():
-            response = generated_text.split("assistant")[-1].strip()
-        else:
-            response = generated_text[-500:]
+        # Decode only generated tokens, retaining the full structured answer.
+        response = processor.decode(outputs[0][input_token_count:], skip_special_tokens=True).strip()
         
         # Parse expected answer
         try:
@@ -157,7 +150,7 @@ def main():
             expected_verdict = "yes" if "yes" in expected_answer.lower()[:50] else "no"
         
         # Parse predicted answer
-        predicted_verdict = "yes" if "yes" in response.lower()[:100] else "no"
+        predicted_verdict = parse_verdict(response)
         
         is_correct = predicted_verdict == expected_verdict
         if is_correct:
@@ -238,4 +231,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

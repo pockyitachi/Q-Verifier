@@ -1,0 +1,46 @@
+{
+  "name": "qreflector_condition_check_v2_after_evidence",
+  "status": "draft_not_evaluated",
+  "source_prompt": "/shared/linqiang/MobileWorld/docs/prompts/qreflector_condition_check_v1.txt",
+  "source_sha256": "c2b4891b6a6cb69fd47a3ebcdd393c340b313512e49078af751b9b7d9e34bde1",
+  "prompt_sha256": "e7606164a8dd466dccf3a02b7413d1f8f6fc386fec372ca7d5af11d698a72ea2",
+  "input_fields": [
+    "goal",
+    "history",
+    "action",
+    "before_image",
+    "after_image"
+  ],
+  "output_fields": [
+    "precondition",
+    "postcondition",
+    "reason",
+    "answer"
+  ],
+  "reason_format": "Precondition check: ... Postcondition check: ... Task progress: ...",
+  "changes": [
+    "Use AFTER as primary outcome evidence and BEFORE as the transition baseline; do not infer an action effect from a desirable AFTER state alone.",
+    "Ground expected effects in the current action type, target and supplied value, excluding later steps.",
+    "Treat generated prerequisites as fallible hypotheses; reconcile conflicting assumptions with direct outcome evidence rather than adding an automatic veto.",
+    "Check exact target fields and values and retain correct-execution AND task-progress semantics.",
+    "Define precondition as requirements on the BEFORE state and postcondition as the expected result of correct action execution, both without using AFTER; AFTER is used only for checking and the verdict."
+  ],
+  "single_call": true,
+  "both_images_visible_from_start": true,
+  "limitations": [
+    "Prompt instructions do not guarantee an internal reasoning order.",
+    "The model can see AFTER while generating conditions; there is no technical visibility mask.",
+    "Formal output-schema constraints and programmatic verdict checks are not added by this text file."
+  ],
+  "evaluation_note": "This candidate incorporates qualitative observations from the existing test analysis. It is not a blind test-independent prompt. Use validation for subsequent comparisons and report any later test comparison as exploratory; no performance gain is established.",
+  "evaluation_runs": [],
+  "verification": {
+    "existing_v1_unchanged": true,
+    "one_context_placeholder": true,
+    "context_format_smoke_check": true,
+    "same_four_string_fields": true,
+    "english_only": true,
+    "before_only_condition_definitions_explicit": true
+  },
+  "activation": "Saved as an independent candidate only. No dataset, training/evaluation job, or default prompt reference changed."
+}

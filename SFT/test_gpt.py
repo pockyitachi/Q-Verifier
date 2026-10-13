@@ -17,6 +17,7 @@ from datetime import datetime
 from PIL import Image
 from io import BytesIO
 from openai import OpenAI
+from verifier_output import parse_verdict
 
 
 def encode_image_to_base64(image_path: str, max_size: int = 512) -> str:
@@ -175,7 +176,7 @@ def main():
             expected_verdict = "yes" if "yes" in expected_answer.lower()[:50] else "no"
         
         # Parse predicted answer
-        predicted_verdict = "yes" if "yes" in gpt_response.lower()[:100] else "no"
+        predicted_verdict = parse_verdict(gpt_response)
         
         is_correct = predicted_verdict == expected_verdict
         if is_correct:
@@ -267,4 +268,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

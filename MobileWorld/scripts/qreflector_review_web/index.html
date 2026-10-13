@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Q-Reflector · 数据复核</title>
+  <link rel="stylesheet" href="review.css">
+  <script src="cases.js" defer></script>
+  <script src="review.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">Q</span><div><strong>Q-Reflector</strong><span class="subtitle">v4 · 29 条数据复核</span></div></div>
+    <div class="header-actions"><span id="progress-text">已确认 0 / 29</span><button id="import-button" class="quiet">导入</button><button id="export-button">导出填写结果</button><input id="import-file" type="file" accept=".json,application/json" hidden></div>
+  </header>
+  <div class="app-layout">
+    <aside class="sidebar" aria-label="Case 列表">
+      <label class="filter-label" for="status-filter">复核列表</label>
+      <select id="status-filter"><option value="all">全部 29 条</option><option value="train">先看训练集 · 3 条</option><option value="test">测试集 · 26 条</option><option value="pending">未确认</option><option value="done">已确认</option><option value="uncertain">待补证据</option></select>
+      <nav id="case-list" aria-label="选择 case"></nav>
+      <p class="sidebar-note">标注内容请用英文，备注可中文。<br>原 01（train-2）已归档。<br>填写结果单独保存。</p>
+    </aside>
+    <main id="main-content">
+      <div class="case-heading"><div><div id="case-kicker" class="eyebrow"></div><h1 id="case-title"></h1></div><div class="navigation"><button id="previous-button" aria-label="上一条">← 上一条</button><button id="next-button" aria-label="下一条">下一条 →</button></div></div>
+      <div class="attention-box"><span class="attention-icon">!</span><div><strong>需要你确认</strong><p id="case-question"></p></div></div>
+      <p class="version-note">依据 Task 和当前一步复核，无需填写 Subgoal。前三条为训练数据；原始数据保持不变。</p>
+      <section class="card context-card" aria-label="任务上下文">
+        <div class="context-block"><h2>Task / Goal · 原始任务</h2><p id="goal-text" lang="en"></p></div>
+        <div class="context-block action-block"><h2>当前 action <span id="missing-action-badge" class="badge warning" hidden>需要补充</span></h2><p id="action-description" lang="en"></p><pre id="action-code"></pre></div>
+      </section>
+      <div class="review-columns">
+        <section class="evidence" aria-label="截图和历史">
+          <div class="card screenshot-card"><div class="section-heading"><h2>执行前后</h2><span>点击图片放大</span></div><div class="screenshot-pair">
+            <figure><figcaption><span class="phase-dot before"></span>Before</figcaption><button class="image-button" id="before-button" aria-label="放大 Before 截图"><img id="before-image" alt="当前 action 执行前的截图"></button></figure>
+            <figure><figcaption><span class="phase-dot after"></span>After</figcaption><button class="image-button" id="after-button" aria-label="放大 After 截图"><img id="after-image" alt="当前 action 执行后的截图"></button></figure>
+          </div><p id="image-error" class="error-text" hidden>截图未加载。请确认页面仍能访问原始图片目录。</p></div>
+          <details class="card history-card" open><summary>历史 <span id="history-count" class="muted"></span></summary><p class="small muted">以下为原始样本保存的全部历史片段，不代表完整任务轨迹。</p><div id="history-list"></div></details>
+          <details class="card source-card"><summary>原始记录与问题说明</summary><p class="small muted">这里的状态描述来自旧标注，可能存在错误；以图片为准。</p><pre id="source-record"></pre></details>
+        </section>
+        <section class="card annotation-card" aria-label="填写复核结果">
+          <div class="section-heading"><h2>你的复核</h2><span id="case-status" class="badge">待复核</span></div>
+          <p class="form-hint">橙色标签标出本条重点。Pre/Post 以 Task、当前 Action 和 Before 为依据；结合 After 判断是否达成这一步的预期，不要求完成整个任务。</p>
+          <form id="review-form" novalidate>
+            <label class="field"><span>Precondition <em data-attention="precondition" hidden>待确认</em></span><textarea id="field-precondition" name="precondition" rows="4" lang="en" spellcheck="true"></textarea></label>
+            <label class="field"><span>Postcondition <em data-attention="postcondition" hidden>待确认</em></span><textarea id="field-postcondition" name="postcondition" rows="4" lang="en" spellcheck="true"></textarea></label>
+            <label class="field"><span>判断 / Answer <em data-attention="answer" hidden>待确认</em></span><select id="field-answer" name="answer"><option value="">请选择</option><option value="Yes">Yes — 当前一步达成预期进展</option><option value="No">No — 当前一步未达成预期进展</option></select></label>
+            <label class="field"><span>Reason <em data-attention="reason" hidden>待确认</em></span><textarea id="field-reason" name="reason" rows="4" lang="en" spellcheck="true"></textarea></label>
+            <details id="context-editor" class="edit-details"><summary>核对 Task / Action <span id="context-attention" class="badge warning" hidden>本条需核对</span></summary>
+              <label class="field"><span>Task / Goal <em data-attention="goal" hidden>待确认</em></span><textarea id="field-goal" name="goal" rows="3" lang="en"></textarea></label>
+              <label class="field"><span>Action type <em data-attention="action_type" hidden>需要补充</em></span><input id="field-action_type" name="action_type" list="action-types" autocomplete="off" placeholder="e.g. Tap"><datalist id="action-types"><option value="Tap"><option value="Swipe"><option value="Long_Press"><option value="Type"><option value="Tap_and_Type"><option value="Tap_Type_and_Enter"><option value="Back"><option value="Home"><option value="Wait"><option value="Open_App"></datalist></label>
+              <label class="field"><span>Action arguments · JSON <em data-attention="action_arguments" hidden>需要补充</em></span><textarea id="field-action_arguments" name="action_arguments" rows="4" class="code-input" spellcheck="false" placeholder='{"x": 120, "y": 300}'></textarea></label>
+              <label class="field"><span>Action description <em data-attention="action_description" hidden>需要补充</em></span><textarea id="field-action_description" name="action_description" rows="3" lang="en" placeholder="Describe the actual action and its local intent in English."></textarea></label>
+              <p class="small muted">补充实际执行的动作。不要为了使判断成立而更改合成负例中的错误参数。</p>
+            </details>
+            <label class="field"><span>备注 <small>可选，可中文</small></span><textarea id="field-notes" name="notes" rows="2" placeholder="判断依据、需要补充的原始日志，或保留疑问的原因"></textarea></label>
+            <div id="form-errors" class="error-box" role="alert" hidden></div>
+            <div class="form-actions"><button type="button" id="uncertain-button">暂无法判断</button><button type="submit" id="confirm-button" class="primary">确认并下一条 →</button></div>
+          </form>
+          <div class="save-line"><span id="save-indicator" aria-live="polite">正在读取保存记录…</span><span id="saved-time"></span></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <dialog id="image-dialog"><div class="dialog-header"><strong id="dialog-title"></strong><div><button id="zoom-button">原始尺寸</button><button id="close-image">关闭 ✕</button></div></div><div id="image-scroll"><img id="large-image" alt="放大的执行截图"></div></dialog>
+  <div id="toast" role="status" hidden></div>
+</body>
+</html>
