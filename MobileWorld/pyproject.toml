@@ -70,6 +70,11 @@ all = ["mobile-world[agents,dev]"]
 mobile-world = "mobile_world.core.cli:main"
 mw = "mobile_world.core.cli:main"
 
+[project.urls]
+Homepage = "https://github.com/pockyitachi/Q-Verifier"
+Repository = "https://github.com/pockyitachi/Q-Verifier"
+Documentation = "https://github.com/pockyitachi/Q-Verifier/tree/main/MobileWorld/docs"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

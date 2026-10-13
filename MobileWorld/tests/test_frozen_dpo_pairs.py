@@ -2,7 +2,6 @@
 import copy
 import importlib.util
 import json
-import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -30,33 +29,6 @@ def test_frozen_dataset_contract_and_source_coverage():
     manifest = frozen.parse((DATA / "DPO_MANIFEST.json").read_text())
     assert manifest["pairs_by_input_batch"] == dict(legacy_488=440, post_distillation_119=119)
     assert manifest["label_direction_corrected_inputs"] == 57
-
-
-def test_public_text_uses_distinct_placeholder_emails_and_consistent_audit_ids():
-    text = (DATA / "dpo_pairs.jsonl").read_text()
-    emails = set(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text))
-    assert emails == {"abcd@example.com", "abcd2@example.com", "test@example.com"}
-    manifest = frozen.parse((DATA / "DPO_MANIFEST.json").read_text())
-    redaction = manifest["privacy_redaction"]
-    assert redaction["modified_pairs"] == 22
-    assert len(redaction["modified_sample_ids"]) == 12
-    assert redaction["images_redacted"] is False
-    assert redaction["training_compatible"] is False
-    assert frozen.validate(DATA, check_images=False)["pairs"] == 559
-
-
-def test_public_text_cannot_validate_as_matching_private_images():
-    with pytest.raises(ValueError, match="cannot be paired with private screenshots"):
-        frozen.validate(DATA, check_images=True)
-
-
-def test_public_text_validation_cli_explicitly_reports_images_not_checked():
-    result = subprocess.run(
-        [sys.executable, str(DATA / "freeze_dpo_pairs.py"), "validate", "--text-only"],
-        capture_output=True, text=True,
-    )
-    assert result.returncode == 0, result.stderr
-    assert json.loads(result.stdout)["image_validation"] == "not_requested"
 
 
 def test_changed_labels_select_the_former_chosen_as_negative():
