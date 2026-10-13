@@ -23,9 +23,6 @@ TARGET_PATH = "/sdcard/mastodon_img"
 REQUIRED_IMAGES = ["image1.jpeg", "image2.jpeg", "image3.jpeg", "image4.jpeg"]
 ASSETS_PATH = "/app/service/src/mobile_world/tasks/definitions/mastodon/assets/flowerPhotos"
 
-# For local development:
-# ASSETS_PATH = "/home/admin/zhangxu/mobile_world/src/mobile_world/tasks/definitions/mastodon/assets/flowerPhotos"
-
 
 def _get_earliest_toot_images(username: str) -> tuple[str | None, list[dict]]:
     """

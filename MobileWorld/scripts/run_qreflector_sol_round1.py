@@ -4,7 +4,6 @@ import argparse
 import fcntl
 import json
 import os
-import pwd
 import subprocess
 import time
 from pathlib import Path
@@ -26,7 +25,8 @@ class ExistingTeacher:
     def __init__(self, run, pid):
         self.run,self.pid,self.returncode=run,pid,None
         proc=Path(f'/proc/{pid}')
-        assert pwd.getpwuid(proc.stat().st_uid).pw_name=='linqiang'
+        if proc.stat().st_uid != os.getuid():
+            raise PermissionError('Teacher process must belong to the current user')
         argv=(proc/'cmdline').read_bytes().split(b'\0')
         assert str(CPU).encode() in argv and b'teachers' in argv and str(run).encode() in argv
         self.start_ticks=(proc/'stat').read_text().split()[21]

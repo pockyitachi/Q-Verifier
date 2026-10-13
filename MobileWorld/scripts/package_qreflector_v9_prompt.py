@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,8 +28,8 @@ def build(output):
     replacement = PROMPT.read_text()
     source_prompt = (SOURCE / 'prompt_template.txt').read_text()
     output.mkdir(exist_ok=False)
-    (output / 'images').symlink_to((SOURCE / 'images').resolve(), target_is_directory=True)
-    (output / 'image_sha256.json').symlink_to((SOURCE / 'image_sha256.json').resolve())
+    (output / 'images').symlink_to(os.path.relpath(SOURCE / 'images', output), target_is_directory=True)
+    (output / 'image_sha256.json').symlink_to(os.path.relpath(SOURCE / 'image_sha256.json', output))
     (output / 'prompt_template.txt').write_text(replacement)
     shutil.copyfile(PROMPT.with_suffix('.metadata.json'), output / 'prompt_metadata.snapshot.json')
     shutil.copyfile(SOURCE / 'quarantine.jsonl', output / 'quarantine.jsonl')
@@ -56,7 +57,7 @@ def build(output):
         if line_map.exists():
             shutil.copyfile(line_map, output / line_map.name)
         reference = SOURCE / (f'{split}.references.jsonl' if split != 'test' else 'test.source_references.jsonl')
-        (output / f'{split}.source_references.jsonl').symlink_to(reference.resolve())
+        (output / f'{split}.source_references.jsonl').symlink_to(os.path.relpath(reference, output))
         changes[split] = {'rows': count, 'contexts_unchanged': True, 'history_unchanged': True,
                          'ordered_images_unchanged': True, 'assistant_targets_unchanged': True,
                          'labels_unchanged': True, 'changed_user_prompts': count}
@@ -78,12 +79,13 @@ def build(output):
     )
     manifest = {
         'created_utc': datetime.now(timezone.utc).isoformat(), 'status': 'frozen',
-        'dataset_version': output.name, 'source': str(SOURCE),
+        'dataset_version': output.name, 'path_base': 'manifest_directory',
+        'source': os.path.relpath(SOURCE, output),
         'source_manifest_sha256': source_pins['DATASET_MANIFEST.json'],
         'source_artifact_sha256': source_pins,
         'splits': copy.deepcopy(source_manifest['splits']), 'test_rows': 1082,
         'quarantined_ids': ['train-243', 'train-589'],
-        'prompt_source': str(PROMPT), 'prompt_sha256': digest(PROMPT),
+        'prompt_source': os.path.relpath(PROMPT, output), 'prompt_sha256': digest(PROMPT),
         'changes': changes, 'images_copied': 0, 'source_images_verified': True,
         'assistant_targets_changed': False, 'labels_changed': False,
         'test_used_for_checkpoint_selection': False,

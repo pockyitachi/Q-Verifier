@@ -60,11 +60,27 @@ Only the v9 dataset contract is tracked. The named prompt pair lives in
 `MobileWorld/src/mobile_world/reflection/prompts/`; the dataset prompt path is
 a relative link to `with_condition_generation.txt`.
 
-The outer `/shared/linqiang/MobileWorld` workspace and its
-`/shared/linqiang/MobileWorld/artifacts` store retain the original experiment
-paths and frozen source snapshots. The maintained checkout is nested at
-`/shared/linqiang/MobileWorld/Q-Verifier`. This server arrangement is not required
-by a fresh clone. Editing the outer checkout does not update this repository.
+In the original server layout, the maintained checkout is `Q-Verifier/` inside
+an outer workspace. From the repository root, `../artifacts/` addresses that
+workspace's original experiment store and frozen source snapshots. This
+arrangement is not required by a fresh clone. Editing the outer checkout does
+not update this repository.
+
+## Relative-path conventions
+
+- Experiment configuration records declare `path_base: repository_root`.
+  Resolve their file paths from the top-level `Q-Verifier/` directory.
+  These records describe the historical external asset layout; they do not
+  provision files or change current script defaults.
+- The dataset manifest declares `path_base: manifest_directory`. Its `source`
+  and `prompt_source` paths are relative to the directory containing the manifest.
+- The import inventory's `source_workspace` is relative to the repository root;
+  its individual file entries are relative to that original workspace.
+- Scripts anchor defaults to their own location and resolve paths at runtime.
+  The persistent-case audit accepts `--browser-source` for an external AndroidWorld
+  checkout; relative values are based on `MobileWorld/`.
+- Docker and Android paths refer to their container/device filesystems and keep
+  their required absolute form.
 
 ## Tests
 
@@ -94,7 +110,8 @@ host-environment Transformers release; see [OPSD notes](../training/docs/opsd.md
 
 ## Provenance
 
-`docs/mobileworld-import.json` records the original import snapshot. Its source
-paths and hashes are intentionally not rewritten to describe later edits.
+`docs/mobileworld-import.json` records the original import snapshot. The workspace
+location is expressed relative to this repository; file entries and original
+content hashes continue to describe the import, not later source edits.
 MobileWorld's licenses and attribution are preserved in
 [MobileWorld/UPSTREAM.md](../MobileWorld/UPSTREAM.md).

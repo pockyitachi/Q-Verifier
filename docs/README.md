@@ -12,5 +12,6 @@
 
 Experiment records describe a particular run or protocol. They are not a live
 progress board, a GPU allocation plan or a consolidated paper result table.
-`mobileworld-import.json` is the immutable import inventory; its paths and hashes
-describe the original import snapshot, not today's directory layout.
+`mobileworld-import.json` preserves the original import's file entries and hashes.
+Its workspace location is relative to the repository root; the inventory
+describes the original snapshot, not today's directory layout.

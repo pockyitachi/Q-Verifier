@@ -21,6 +21,14 @@ and [without condition generation](../MobileWorld/src/mobile_world/reflection/pr
 The release's `prompt_template.txt` points to the first file; its content and
 frozen hash are unchanged.
 
+Manifest `source` and `prompt_source` paths are relative to the manifest's
+directory, as declared by `path_base`. The prompt path refers to the maintained
+template with the same frozen content hash. `original_manifest_sha256` records
+the manifest before this path-only metadata normalization. Its full-file hash
+therefore changes; example, label, image and prompt artifact hashes do not.
+Historical evaluations that pin the original manifest must use the original
+archived manifest. Existing experiment snapshots retain their original pins.
+
 Manifests and the prompt link are tracked. Row files, screenshots and annotation
 caches must be provisioned separately. Historical v6/v7/v8 data and prompt copies
 are excluded from the Git tree; existing server assets remain available for

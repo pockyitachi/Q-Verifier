@@ -14,7 +14,10 @@ They are not current progress reports or instructions to reuse a device.
 | [Sol round 1](sol-round1-v9.md) | Fixed student-generation, correction and training protocol |
 | [OPSD method](../../training/docs/opsd.md) | Frozen same-vocabulary teacher and response-token loss |
 
-Absolute artifact paths refer to the server's original experiment store. Weights,
+Artifact paths in the configuration record are relative to the repository root,
+as declared by `path_base`. For example, `../artifacts/` identifies the historical
+experiment store beside the checkout. Original configuration and model hashes
+are unchanged; only the recorded path representation is normalized. Weights,
 trajectories and raw API responses are not included in Git. Later corrections,
 reruns and selected-trajectory collections require their own run records; a
 configuration snapshot does not establish a single-run success rate.
