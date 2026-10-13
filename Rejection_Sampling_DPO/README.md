@@ -1,147 +1,86 @@
-# Rejection Sampling + DPO
+# Canonical v9 DPO preferences
 
-## Overview
+**The sole maintained dataset is `dpo_pairs.jsonl`: 559 pairs from 263 distinct
+training transitions in the 882-instance training source pool.** There is no
+separate active 371-, 488-, or 119-pair dataset. The 882 figure describes source
+instances, not preference pairs or complete pair coverage.
 
-This approach creates **proper DPO pairs** by:
-1. Generating multiple responses from the model for each sample
-2. Checking which responses get the correct vs wrong answer
-3. Pairing: (correct answer → chosen) vs (wrong answer → rejected)
-4. Training with DPO
+| Construction | Count |
+| --- | ---: |
+| Input pair candidates | 607 |
+| Quarantined-source pairs excluded | 25 |
+| Duplicates removed after normalization | 23 |
+| Final pairs | 559 |
+| Retained legacy-derived pairs | 440 |
+| Retained post-distillation pairs | 119 |
+| Unique covered training instances | 263 |
+| Chosen Yes / No | 380 / 179 |
 
-Unlike the old DPO approach (which corrupted images = different inputs), this keeps the **same input** and only differs in the **output**.
+The current accepted supervision has 849 of the 882 source instances. The other
+33 remain quarantined (2 earlier cases and 31 teacher/reference disagreements).
+Pairs from those sources were excluded. Training examples without a usable
+negative need not produce a pair. No validation/test transition was added.
 
-## Why This Works
+## Input, answers and preference rule
 
-```
-Old DPO (broken):
-  Input A + Image X → "Yes"  (chosen)
-  Input A + Image Y → "No"   (rejected)  ← Different input!
+All pairs use the frozen v9 goal/action/history prompt with dynamic image
+geometry, followed by BEFORE and AFTER. Image paths are relative to this
+`Rejection_Sampling_DPO/` directory and point to the existing image store; images
+are not copied. Preprocessing is RGB with an aspect-preserving 512-pixel maximum
+side and LANCZOS resizing, matching the recent pair-generation run.
 
-New DPO (correct):
-  Input A + Image X → "Yes, because..."  (chosen)
-  Input A + Image X → "No, because..."   (rejected)  ← Same input!
-```
+Both completions are ordered JSON objects:
+`precondition -> postcondition -> reason -> answer`.
+The reason uses `Precondition check:`, `Postcondition check:`, and `Task progress:`.
+The chosen answer matches the current accepted training label; the rejected
+answer has the opposite label. This is label-correctness preference supervision,
+not an independently scored preference for condition or explanation quality.
 
-## Pipeline
+Chosen completions use the accepted v9 Luna target. For 57 legacy input pairs,
+the old preference direction contradicted the revised label: the former chosen
+response supplies the negative instead. These are input-pair corrections, counted
+before deduplication; the old pair's wrong label is not silently retained.
 
-```
-Step 1: Generate Multiple Responses
-├── For each training sample
-├── Generate N responses (with sampling, temp=0.8)
-├── Check which are correct vs wrong
-└── Output: candidate_responses.jsonl
+The legacy negatives originally had only answer/reason. Their old rationale is
+preserved while numbered observation/evaluation sections are mapped to the v9
+reason sections. For an unsectioned rationale, the accepted starting-state check
+is reused, the complete old rationale is retained in the outcome check, and a
+verdict-consistent task-progress conclusion is added. Both expected conditions
+are copied from the accepted target. Thus these 440 retained legacy negatives are
+**format-adapted legacy responses, not newly sampled four-field student outputs**.
+The recent 119 rejected completions retain their original four-field text.
+No teacher API, student inference or training was run for consolidation.
 
-Step 2: Create DPO Pairs
-├── For each sample with both correct & wrong responses
-├── Pair them: (correct → chosen, wrong → rejected)
-└── Output: dpo_pairs.jsonl
+Each row records its source input(s), conversion, and whether the original
+chosen or rejected side supplied the negative. `dpo_pair_audit.jsonl` accounts
+for every input candidate, including exclusions and merged duplicates; it is an
+audit of this dataset, not an alternative preference dataset.
 
-Step 3: Train with DPO
-├── Load distilled model
-├── Train on preference pairs (manual DPO loss)
-└── Output: DPO-trained model
-```
+## Frozen contract and validation
 
-## Analysis of 228 DPO-Usable Samples
+`DPO_MANIFEST.json` pins the pair/audit files, prompt, all 526 referenced images,
+source hashes, covered IDs, label counts and the intended reference adapter.
+The freeze builder reproduced the pair and audit files byte-for-byte before
+retiring the separate source pair files. New writes must not overwrite this set.
 
-From 647 training samples with 5 responses each, **228 samples** had both correct and wrong responses (usable for DPO).
-
-### 1. Distribution by Expected Answer
-
-| Expected | Count | % | Error Type When Wrong |
-|----------|-------|---|----------------------|
-| YES | 162 | 71.1% | False Negative (model too conservative) |
-| NO | 66 | 28.9% | False Positive (model too lenient) |
-
-**Key Insight**: The model makes more errors on YES cases, meaning it tends to be **too conservative** (saying No when it should say Yes).
-
-### 2. Uncertainty Distribution
-
-| Model Accuracy | Samples | Interpretation |
-|----------------|---------|----------------|
-| 4/5 correct | 85 | Low uncertainty (1 error) |
-| 3/5 correct | 59 | Medium uncertainty |
-| 2/5 correct | 51 | High uncertainty |
-| 1/5 correct | 33 | Very uncertain (mostly wrong) |
-
-### 3. DPO Pair Options
-
-| Strategy | Pairs | Notes |
-|----------|-------|-------|
-| All wrong responses | 488 | Maximum training signal |
-| Max 2 per sample | 371 | Good balance |
-| 1 per sample | 228 | Conservative |
-
-**We used 488 pairs** (all wrong responses paired with correct ones) for maximum training signal.
-
-### 4. Non-Usable Samples
-
-| Category | Count | Meaning |
-|----------|-------|---------|
-| All 5 Correct | 375 | Model already handles these well |
-| All 5 Wrong | 44 | Model consistently fails (may need different approach) |
-
-## Usage
-
-### Step 1: Generate Candidate Responses
+From the repository root:
 
 ```bash
-python3 generate_candidates.py \
-    --model_path ../Teacher_Student_Distill/qwen3_vl_verifier_distilled_8b/final \
-    --data_dir ../SFT/training_data_filtered \
-    --num_responses 5 \
-    --temperature 0.8 \
-    --output_path ./candidate_responses.jsonl
+python Rejection_Sampling_DPO/freeze_dpo_pairs.py validate
+python -m pytest MobileWorld/tests/test_frozen_dpo_pairs.py
 ```
 
-### Step 2: Create DPO Pairs
+The first command requires the externally provisioned images. CPU tests verify
+the tracked dataset without requiring image downloads or GPU access.
 
-```bash
-python3 create_dpo_pairs.py \
-    --candidates_path ./candidate_responses.jsonl \
-    --output_path ./dpo_pairs_488.jsonl
-```
+## Training scope
 
-### Step 3: Train with DPO
+This consolidation fixes the **data**, and does not launch DPO training.
+The agreed optimizer is standard DPO with a frozen reference model and the sum
+of full chosen/rejected response-token log-probabilities: exclude prompt and
+padding, include the first response token and EOS. The reference adapter hash
+is pinned in the manifest.
 
-**Note**: Use `train_dpo_simple.py` (not the TRL-based scripts which don't work with VLMs).
-
-```bash
-python3 train_dpo_simple.py \
-    --pairs_path ./dpo_pairs_488.jsonl \
-    --output_dir ./qwen3_vl_verifier_dpo_8b_v2
-```
-
-### Step 4: Test the Model
-
-```bash
-cd ../SFT && python3 test_verifier.py \
-    --model_path ../Rejection_Sampling_DPO/qwen3_vl_verifier_dpo_8b_v2/final \
-    --data_dir ../testing_data_androidworld \
-    --val_file test.jsonl \
-    --num_samples 1082
-```
-
-## Parameters
-
-| Parameter | Description | Recommended |
-|-----------|-------------|-------------|
-| `num_responses` | Responses per sample | 5 |
-| `temperature` | Sampling temperature | 0.8 |
-| `beta` | DPO preference strength | 0.1 |
-| `grad_accum` | Gradient accumulation | 16 |
-| `lr` | Learning rate | 5e-6 |
-
-## Results
-
-| Model | Accuracy | Notes |
-|-------|----------|-------|
-| Distilled Qwen3-8B (before DPO) | 79.21% | Baseline |
-| DPO-trained (488 pairs) | TBD | After DPO |
-
-## Technical Notes
-
-- **TRL DPOTrainer doesn't work with VLMs** - it gets stuck during tokenization
-- We use `train_dpo_simple.py` which implements DPO loss manually
-- Images are resized to 512x512 to reduce VLM token count
-- `torch.autocast(dtype=bfloat16)` is required for stable training
+`train_dpo_simple.py` is a historical reference-free implementation. It is not
+the agreed loss and deliberately refuses this four-field dataset before model
+loading. `create_dpo_pairs.py` also refuses to overwrite the frozen files.

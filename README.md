@@ -55,10 +55,13 @@ trainers and historical results remain in `SFT/`, `Teacher_Student_Distill/`,
 as [historical documentation](docs/archive/README-before-mobileworld.md);
 its scores and settings must not be conflated with later v9 experiments.
 
-The latest Luna v9 preparation trained on 849 accepted sources from 882
-candidates and produced 119 DPO pairs from 82 sources. That run completed
-four-field supervised distillation and pair generation; it did **not** run DPO
-or GRPO optimization. See its [completion record](docs/experiments/luna-v9-distill-dpo-20261012.json).
+The sole maintained [DPO dataset](Rejection_Sampling_DPO/README.md) contains
+**559 four-field pairs covering 263 distinct transitions from the 882-instance
+training pool**. It consolidates legacy and recent candidates against current
+v9 labels, excludes quarantined sources, and removes duplicate pairs. The
+[frozen manifest](Rejection_Sampling_DPO/DPO_MANIFEST.json) records its construction
+and hashes. The latest Luna supervised distillation used 849 accepted sources;
+DPO and GRPO optimization have not been launched for this consolidated dataset.
 
 ## Setup and repository layout
 

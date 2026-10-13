@@ -18,7 +18,7 @@ Q-Verifier/
   GRPO/                    # legacy trainer and current v9 reward definition
   SFT/                     # legacy trainers and shared output parser
   Teacher_Student_Distill/  # legacy distillation workflow
-  Rejection_Sampling_DPO/   # legacy pair generation and DPO trainers
+  Rejection_Sampling_DPO/   # sole frozen DPO dataset, validator and legacy tools
   datasets/                # frozen contracts tracked; row data/images external
   docs/experiments/        # compact provenance and configuration records
   docs/archive/            # older documentation, explicitly historical
