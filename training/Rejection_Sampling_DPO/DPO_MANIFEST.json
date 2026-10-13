@@ -887,8 +887,45 @@
   },
   "builder_sha256": "b6f74a0fb6ee3fca57f5513ff1651c3d6011b89564539f7dd8fc2376ea20fa00",
   "file_sha256": {
-    "dpo_pairs.jsonl": "4500656f86d2f38a0878707d1d3e5fdea467236e6f03fdcb704bde46397d45e9",
-    "dpo_pair_audit.jsonl": "6d1dbbad4e45f6e223ec4cd1cdb8e0661eeb0cc18e58ecac15bef3644cfc31c2"
+    "dpo_pairs.jsonl": "04346988906b2f525480233ac12a41761d6189b2d61677294099f77655d9611d",
+    "dpo_pair_audit.jsonl": "26600b8891cde3eb37211091a2d0e720602ecef738eda23f25061f201742bb2e"
   },
-  "reproducibility_check": "Final builder reproduced canonical pair and audit bytes exactly before retiring inputs."
+  "reproducibility_check": "The freeze builder reproduced the private original files exactly. This public view additionally replaces two personal email addresses and recomputes affected pair IDs, audit references and file hashes; source and image hashes describe the private original assets.",
+  "privacy_redaction": {
+    "scope": "public_text_only",
+    "placeholders": [
+      "abcd2@example.com",
+      "abcd@example.com"
+    ],
+    "replacement_counts": {
+      "abcd@example.com": 60,
+      "abcd2@example.com": 3
+    },
+    "modified_pairs": 22,
+    "modified_audit_records": 24,
+    "modified_sample_ids": [
+      "train-1",
+      "train-12",
+      "train-24",
+      "train-358",
+      "train-381",
+      "train-396",
+      "train-476",
+      "train-481",
+      "train-516",
+      "train-521",
+      "train-545",
+      "train-642"
+    ],
+    "original_manifest_sha256": "7b8fab01aa728993313883bd6fde1789b3ffc11e2ba2f172171756d052e0183d",
+    "original_file_sha256": {
+      "dpo_pairs.jsonl": "4500656f86d2f38a0878707d1d3e5fdea467236e6f03fdcb704bde46397d45e9",
+      "dpo_pair_audit.jsonl": "6d1dbbad4e45f6e223ec4cd1cdb8e0661eeb0cc18e58ecac15bef3644cfc31c2"
+    },
+    "labels_and_preferences_unchanged": true,
+    "images_redacted": false,
+    "image_hashes_refer_to_private_originals": true,
+    "training_compatible": false,
+    "training_requirement": "Use the complete private original dataset and manifest, or separately release matching redacted screenshots and an updated image contract. Do not combine this text-only view with private original screenshots."
+  }
 }

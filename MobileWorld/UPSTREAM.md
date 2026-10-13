@@ -1,6 +1,6 @@
 # MobileWorld support for Q-Verifier
 
-This directory is maintained inside `pockyitachi/Q-Verifier`. It is an ordinary
+This directory is maintained inside this project. It is an ordinary
 source directory, not a second Git repository or a submodule pointing to the
 upstream MobileWorld repository.
 

@@ -21,7 +21,7 @@ from pathlib import Path
 MANUAL = {
     ("train", 1): (
         "Gmail's compose screen must provide an editable To recipient field that can be focused and accept the intended email address.",
-        "The To field contains linqg327@gmail.com as the confirmed recipient. Opening a sender-account menu or showing this address only in the From field does not satisfy the step.",
+        "The To field contains the task's requested email address as the confirmed recipient. Opening a sender-account menu or showing this address only in the From field does not satisfy the step.",
         "visually_reviewed_recipient_entry",
     ),
     ("train", 25): (
@@ -116,8 +116,8 @@ for _split, _lines, _pre, _post in MANUAL_TEXT:
     for _line in _lines:
         MANUAL[(_split, _line)] = (_pre, _post, "text_reviewed_specific_operation")
 MAIL_REASON = (
-    "The action opened the sender-account dropdown, showing linqg327@gmail.com "
-    "and spearconcordia@gmail.com as account options. The To field remains empty; "
+    "The action opened the sender-account dropdown, showing two sender accounts "
+    "as options. The To field remains empty; "
     "the intended recipient was not entered or confirmed."
 )
 KNOWN_ISSUES = {
