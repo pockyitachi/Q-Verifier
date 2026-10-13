@@ -1,0 +1,7 @@
+# Keep imported task assets and research documents out of textual diffs.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.mp4 binary
+*.xlsx binary

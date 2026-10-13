@@ -1,0 +1,60 @@
+V9 reward implementation: reward_v9.py
+
+The historical train_grpo.py remains unchanged for reproducibility. Its default
+is still the legacy asymmetric reward, 4-bit model loading and square image
+resizing. Do not run that legacy entry point as a BF16 v9 experiment.
+
+The new V9RewardFunction is ready for the next v9 GRPO trainer. Pass a dataset
+column expected_answer containing the reviewed Yes/No label. The expanded column
+must align one-to-one with completions. Missing labels raise rather than silently
+producing neutral rewards. Conversational assistant completions are supported.
+
+Default mode: asymmetric (restores the old binary judgement matrix).
+  Reviewed Yes, predicted Yes: +2.5
+  Reviewed Yes, predicted No:  -2.5 (false rejection / false negative)
+  Reviewed No, predicted No:   +2.0
+  Reviewed No, predicted Yes:  -2.0 (false acceptance / false positive)
+Invalid/unparseable verdict: -2.5. This deliberately differs from the old -1:
+an invalid answer must not obtain a better reward than a valid wrong verdict.
+
+Optional mode='symmetric' preserves the previous v9 ablation: correct +1,
+incorrect/invalid -1. Both score() and V9RewardFunction accept the mode argument.
+Auxiliary reward: +0.1 by default only for one valid JSON object whose nonempty
+string fields are ordered precondition, postcondition, reason, answer, with
+answer exactly Yes or No and the three ordered v9 reason sections.
+The format weight is configurable (0..0.25). 0.1 is a modest starting choice,
+not a tuned optimum and not an auxiliary supervised loss.
+
+The default weights reviewed positive examples 1.25 times as strongly as
+reviewed negative examples. These weights reproduce the historical design;
+the current student's error distribution does not yet establish their optimality.
+There is no keyword heuristic, no short-answer bonus, and no penalty merely
+for a longer four-field answer.
+Duplicate JSON keys, nested substitute answers and unsupported label strings
+are invalid. A correctly formatted wrong verdict cannot outscore a correct one.
+
+GRPO NORMALIZATION REQUIREMENT FOR A FUTURE TRAINER
+The installed TRL in artifacts/envs/qreflector-sft defaults to scale_rewards='group'.
+It subtracts each input group's mean and divides by that group's reward std.
+When completions have the same format bonus and valid Yes/No answers, +2.5/-2.5
+and +2/-2 are just different scales; per-group standardization cancels that
+scale (apart from epsilon). Raw asymmetry alone is not proof of stronger FN
+optimization. Invalid outputs or differing format bonuses complicate this,
+but do not justify assuming the intended class weighting survives.
+
+Planned future asymmetric run: use scale_rewards='none' (group-mean centering
+without group-std division) to retain the 1.25 positive-example weight.
+An alternative is explicit class weighting AFTER group normalization, but that
+requires a trainer change and is not implemented here. Compare asymmetric and
+symmetric rewards under the SAME normalization setting, and account for their
+different overall reward magnitudes when setting learning rate/KL coefficient.
+No trainer configuration has been applied or training started in this edit.
+
+This reward checks syntax and binary accuracy. It does NOT establish that
+pre/postconditions are grounded, that reasoning is faithful, or that the model
+constructs conditions without attending to AFTER. Semantic supervision remains
+in the reviewed teacher targets. Images are simultaneous, as in the v9 prompt.
+
+Before any future GRPO run, its trainer must also use the frozen v9 training
+copy, BF16 LoRA lineage, aspect-preserving image resize, dynamic geometry, and
+the same label semantics. No GRPO training is launched by this change.

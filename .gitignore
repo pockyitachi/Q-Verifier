@@ -76,11 +76,8 @@ env/
 venv_*/
 **/venv_*/
 
-# Android World specific
-Agent-SAMA-main/android_world/runs/
-Agent-SAMA-main/android_world/screenshot/
-Agent-SAMA-main/android_world/build/
-Agent-SAMA-main/android_world/qverifier_logs/
+# Retired integration (removed from the maintained source tree)
+/Agent-SAMA-main/
 
 # IDE
 .idea/
@@ -125,3 +122,42 @@ Thumbs.db
 # !**/final/  # Keep final model configs (weights still ignored)
 # !**/*.json  # Keep config files
 # !**/*.md    # Keep documentation
+
+# Local data and review exports. Keep only the frozen dataset contracts in Git.
+/datasets/**
+!/datasets/*/
+!/datasets/*/prompt_template.txt
+!/datasets/*/FROZEN.json
+!/datasets/*/README.txt
+!/datasets/*/manifest.json
+!/datasets/*/DATASET_MANIFEST.json
+/datasets/current
+/review/
+/Teacher_Student_Distill/gpt_data_882_luna_supplement_20261012/
+
+# MobileWorld is maintained as source inside this repository. Runtime assets
+# remain external, including any local symlinks to the original server workspace.
+/MobileWorld/artifacts/
+/MobileWorld/traj_logs/
+/MobileWorld/.venv/
+/MobileWorld/vllm_env/
+/MobileWorld/unsloth_compiled_cache/
+/MobileWorld/docker/adbkey*
+/MobileWorld/docker/mastodon-docker/data/
+/MobileWorld/docker/mastodon-docker/.env.dev
+/MobileWorld/docker/mattermost-docker/volumes*/
+/MobileWorld/docker/mattermost-docker/data.jsonl
+/MobileWorld/docker/mattermost-docker/data.zip
+/MobileWorld/docker/*.avd*/
+!/MobileWorld/assets/**/*.png
+!/MobileWorld/assets/**/*.jpg
+!/MobileWorld/src/**/*.png
+!/MobileWorld/src/**/*.jpg
+!/MobileWorld/src/**/*.jpeg
+
+# Never track local credentials or transport keys.
+.env.*
+!.env.example
+*.pem
+*.key
+*.run.lock

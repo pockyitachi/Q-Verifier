@@ -1,0 +1,132 @@
+{
+  "created_utc": "2026-10-07T19:00:59.347053+00:00",
+  "status": "frozen",
+  "dataset_version": "condition_generation_v9_after_evidence",
+  "source": "/shared/linqiang/MobileWorld/Q-Verifier/datasets/condition_generation_v8_adjudicated",
+  "source_manifest_sha256": "ac67f86fbf97458d2ea10ea83cddf55b8f85fc2ccd2a2022229a7e6b4ed924ff",
+  "source_artifact_sha256": {
+    "DATASET_MANIFEST.json": "ac67f86fbf97458d2ea10ea83cddf55b8f85fc2ccd2a2022229a7e6b4ed924ff",
+    "train.jsonl": "b7a919aab32615dc01218ea6243316c9d0b286311304c92e5923bf77569643e5",
+    "train.inputs.jsonl": "5409725cdb4ae9883b445386cdaf1745d4534ce31aa2574dee30e29bed2c5955",
+    "train.references.jsonl": "281209dc5048fc224351af5af75eb7aaeb27e224703996d02920b63941acaf06",
+    "train.line_map.jsonl": "098dc87fc6b42cd5c34afd56b99fdd5cbe86cea328e383cfc80960986109dedc",
+    "train.labels.jsonl": "ce151d712bb7172117c60a1cf890829b2e92e1f6268f3166f5d25239564a6168",
+    "val.jsonl": "208fe1007f8a2589e1c2421ba62ec509d79a39e160c9a6c0bb4c8ba0caee5fb0",
+    "val.inputs.jsonl": "f510e74ed1b69c5fd2c8652c1d3ee86f8443eaefee0353cd59363efb4487d0e4",
+    "val.references.jsonl": "c7a52d7c9dbd260534758d5c8cbfe05e040767d9ca47d4c8e33401e070fe9192",
+    "val.line_map.jsonl": "63e28f92d974aa47bb5aa92427565a30136c8358af8204cde170739d2a2c43f9",
+    "val.labels.jsonl": "02ee66266e039ad93d05641944f33ca757789e32dfb8e93aaa5a5e8721955417",
+    "all_source_audit.jsonl": "c8d278197015fd5794e145617ce5db1d4b2ea751ee0c971447ee14945ce54532",
+    "quarantine.jsonl": "65d437521bad66d0d8c3d27cdb92b28ef461d4083f04bc3dd272222b7a98b92a",
+    "adjudication_decisions.jsonl": "44107cb777e774205ac3585f40bfdb0aa07e83fa0eeb3237607b570e5fed433b",
+    "review_source.snapshot.jsonl": "13e6b989fa40f4b81d9ec36d211111a1ae1d235378a6db0d7cdd90fb942def4b",
+    "prior_v7_review_decisions.jsonl": "c888d83704793d7fbfbad0b845f9424f5bd1273057f9cb79f3ced736b1c829ff",
+    "prompt_template.txt": "c2b4891b6a6cb69fd47a3ebcdd393c340b313512e49078af751b9b7d9e34bde1",
+    "test.jsonl": "28021132046dab55ee4101cf923b64489749f81e3f1428f2a1d5a4289e768e26",
+    "test.inputs.jsonl": "d257a55c754b69d934c5c396395db094002d71ec6a1cd0834ce10d715711fe58",
+    "test.labels.jsonl": "9c3800ee0070d014f90172b96ec88aefaf62f3e34ed72f39cea276d6b65a50d9",
+    "test.input_manifest.jsonl": "d3409e11902550869cf8451655c5f810ee5bb56db93f4ad3344684a928af9d08",
+    "test.source_references.jsonl": "08678fba06d4918739038f21635c310d1b4e33b1e2924e5272e05a7a6ac8c094",
+    "image_sha256.json": "0390f62b09eef0da6ff3c5af2b1e78e8d4b63ad10f1437e665002ae0ba22cdf4",
+    "adjudication_report.json": "bf5ea4c334fad05915b9f1556bd1eedc8d45f2e4ce6c604d64089fc6977ef742",
+    "status.json": "7722559e30ab92a64c7ac66106b8615064ded27fcf10bf85aa2ee8556d04a07f",
+    "README.txt": "b3444355bfe561c7707e2d3bf310879dd79f26618b0f5625b298c012ecf496b6"
+  },
+  "splits": {
+    "train": {
+      "source_rows": 882,
+      "accepted_rows": 880,
+      "quarantined_rows": 2,
+      "labels": {
+        "No": 368,
+        "Yes": 512
+      },
+      "label_changes": {
+        "Yes->No": 29,
+        "No->Yes": 18
+      },
+      "reviewed_label_kept": 27
+    },
+    "val": {
+      "source_rows": 71,
+      "accepted_rows": 71,
+      "quarantined_rows": 0,
+      "labels": {
+        "Yes": 53,
+        "No": 18
+      },
+      "label_changes": {
+        "No->Yes": 3,
+        "Yes->No": 3
+      },
+      "reviewed_label_kept": 5
+    }
+  },
+  "test_rows": 1082,
+  "quarantined_ids": [
+    "train-243",
+    "train-589"
+  ],
+  "prompt_source": "/shared/linqiang/MobileWorld/docs/prompts/qreflector_condition_check_v2_after_evidence.txt",
+  "prompt_sha256": "e7606164a8dd466dccf3a02b7413d1f8f6fc386fec372ca7d5af11d698a72ea2",
+  "changes": {
+    "train": {
+      "rows": 880,
+      "contexts_unchanged": true,
+      "history_unchanged": true,
+      "ordered_images_unchanged": true,
+      "assistant_targets_unchanged": true,
+      "labels_unchanged": true,
+      "changed_user_prompts": 880
+    },
+    "val": {
+      "rows": 71,
+      "contexts_unchanged": true,
+      "history_unchanged": true,
+      "ordered_images_unchanged": true,
+      "assistant_targets_unchanged": true,
+      "labels_unchanged": true,
+      "changed_user_prompts": 71
+    },
+    "test": {
+      "rows": 1082,
+      "contexts_unchanged": true,
+      "history_unchanged": true,
+      "ordered_images_unchanged": true,
+      "assistant_targets_unchanged": true,
+      "labels_unchanged": true,
+      "changed_user_prompts": 1082
+    }
+  },
+  "images_copied": 0,
+  "source_images_verified": true,
+  "assistant_targets_changed": false,
+  "labels_changed": false,
+  "test_used_for_checkpoint_selection": false,
+  "prompt_development_used_previous_test_error_analysis": true,
+  "packager_sha256": "4e22f112bdee5f28d0de935b9517abcddbefde8e91c2f67449728c7ec356565b",
+  "artifact_sha256": {
+    "image_sha256.json": "0390f62b09eef0da6ff3c5af2b1e78e8d4b63ad10f1437e665002ae0ba22cdf4",
+    "prompt_template.txt": "e7606164a8dd466dccf3a02b7413d1f8f6fc386fec372ca7d5af11d698a72ea2",
+    "prompt_metadata.snapshot.json": "eb3b636eb3e482dcd43df89315df16ae48c9b2ea0fc0c84fda77c0b5457c8ffc",
+    "quarantine.jsonl": "65d437521bad66d0d8c3d27cdb92b28ef461d4083f04bc3dd272222b7a98b92a",
+    "train.jsonl": "abc4db4878b00d7931106a2e9e27d52ef4ca5bf0766a80927e2036198efd6a58",
+    "train.inputs.jsonl": "b7db4d07784cd8b326e7c9a8d4daff1e9e43f31cae97d8302b04056324cb9eaa",
+    "train.input_manifest.jsonl": "876603c8df7f7251cac12e8f32112e388a62da87a9a91edc878938340bdde696",
+    "train.labels.jsonl": "ce151d712bb7172117c60a1cf890829b2e92e1f6268f3166f5d25239564a6168",
+    "train.line_map.jsonl": "098dc87fc6b42cd5c34afd56b99fdd5cbe86cea328e383cfc80960986109dedc",
+    "train.source_references.jsonl": "281209dc5048fc224351af5af75eb7aaeb27e224703996d02920b63941acaf06",
+    "val.jsonl": "494ac40f83a7cc562f36229c50d1c6a92c369a5094e447953cb6ccc6d51b15ea",
+    "val.inputs.jsonl": "4d39ec7acdac77346d4fd3d35f8db5db206992bdacb7dce93b74485b7e60a1c8",
+    "val.input_manifest.jsonl": "fd8ae53fcceb3cc304f2a946b226836d15f2047013c813b97921de9c9c310e81",
+    "val.labels.jsonl": "02ee66266e039ad93d05641944f33ca757789e32dfb8e93aaa5a5e8721955417",
+    "val.line_map.jsonl": "63e28f92d974aa47bb5aa92427565a30136c8358af8204cde170739d2a2c43f9",
+    "val.source_references.jsonl": "c7a52d7c9dbd260534758d5c8cbfe05e040767d9ca47d4c8e33401e070fe9192",
+    "test.jsonl": "3f37ab0039a63fec9d318d27c422deecfa0ea687bd10de7df0628970d87bab80",
+    "test.inputs.jsonl": "0a56739104713bf866dc57e1acba1851ac96ffb387e66ba9c8d72684dee5afad",
+    "test.input_manifest.jsonl": "b3806fcd586fe931431b15665ef31e76b265c3184086ab6321451fabbaee3e2e",
+    "test.labels.jsonl": "9c3800ee0070d014f90172b96ec88aefaf62f3e34ed72f39cea276d6b65a50d9",
+    "test.source_references.jsonl": "08678fba06d4918739038f21635c310d1b4e33b1e2924e5272e05a7a6ac8c094",
+    "README.txt": "1433f189f4a3651e547f78153ff1f01cf013995d4c5e03b617fef3a300902c83"
+  }
+}
