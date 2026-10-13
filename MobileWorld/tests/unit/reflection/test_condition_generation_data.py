@@ -18,7 +18,7 @@ def load_module(name, relative_path):
 
 
 converter = load_module("condition_converter", "scripts/convert_qreflector_condition_generation.py")
-parser = load_module("verifier_output", '../SFT/verifier_output.py')
+parser = load_module("verifier_output", '../training/SFT/verifier_output.py')
 repair = load_module("condition_repair", "scripts/repair_qreflector_condition_semantics.py")
 
 

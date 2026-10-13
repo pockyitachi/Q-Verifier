@@ -88,7 +88,7 @@ def image_geometry(before, after, current_action, max_side=1024):
 
 
 def build_v9_prompt(global_task, current_action, before, after, history=()):
-    template = Path(__file__).with_name("prompts").joinpath("v9.txt").read_text()
+    template = Path(__file__).with_name("prompts").joinpath("with_condition_generation.txt").read_text()
     if hashlib.sha256(template.encode()).hexdigest() != V9_SHA256:
         raise ValueError("Frozen v9 prompt checksum mismatch")
     # Copy only the documented history fields; no previous verdicts, labels or hints.

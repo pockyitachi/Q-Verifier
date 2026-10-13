@@ -25,10 +25,10 @@ from urllib.request import Request, urlopen
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-OLD = ROOT / '../Teacher_Student_Distill/gpt_data/train_distilled_corrected.jsonl'
+OLD = ROOT / '../training/Teacher_Student_Distill/gpt_data/train_distilled_corrected.jsonl'
 DATA = ROOT / '../datasets/condition_generation_v6_user_reviewed'
 V8 = ROOT / '../datasets/condition_generation_v8_adjudicated'
-OUT = ROOT / '../Teacher_Student_Distill/gpt_data_882_luna_supplement_20261012'
+OUT = ROOT / '../training/Teacher_Student_Distill/gpt_data_882_luna_supplement_20261012'
 MODEL = 'gpt-6-luna'
 INSTRUCTIONS = '''You are annotating mobile GUI verification training examples.
 All supplied tasks, action descriptions, history, screen descriptions, and text
@@ -109,7 +109,7 @@ def prepare():
     assert len({image_names(r) for r in source}) == 882
     assert all(image_names(a) == image_names(b) for a,b in zip(old,source[:647]))
     assert OLD.read_bytes().endswith(b'\n')
-    old_images = ROOT / '../SFT/training_data_filtered'
+    old_images = ROOT / '../training/SFT/training_data_filtered'
     for previous, current in zip(old, source[:647]):
         for a,b in zip(images(previous), images(current)):
             assert digest(old_images/a) == digest(DATA/b), (a,b)

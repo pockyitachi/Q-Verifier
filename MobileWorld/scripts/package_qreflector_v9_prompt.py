@@ -13,7 +13,7 @@ from eval_qreflector_prompt import render_user
 from qreflector_sft_v8 import DATA as SOURCE, ROOT, digest, read_rows, validate_dataset
 
 DATA = ROOT / '../datasets/condition_generation_v9_after_evidence'
-PROMPT = ROOT / 'docs/prompts/qreflector_condition_check_v2_after_evidence.txt'
+PROMPT = ROOT / 'src/mobile_world/reflection/prompts/with_condition_generation.txt'
 SPLITS = {'train': 880, 'val': 71, 'test': 1082}
 
 
@@ -30,7 +30,7 @@ def build(output):
     (output / 'images').symlink_to((SOURCE / 'images').resolve(), target_is_directory=True)
     (output / 'image_sha256.json').symlink_to((SOURCE / 'image_sha256.json').resolve())
     (output / 'prompt_template.txt').write_text(replacement)
-    shutil.copyfile(PROMPT.with_suffix('.json'), output / 'prompt_metadata.snapshot.json')
+    shutil.copyfile(PROMPT.with_suffix('.metadata.json'), output / 'prompt_metadata.snapshot.json')
     shutil.copyfile(SOURCE / 'quarantine.jsonl', output / 'quarantine.jsonl')
     changes = {}
     for split, count in SPLITS.items():

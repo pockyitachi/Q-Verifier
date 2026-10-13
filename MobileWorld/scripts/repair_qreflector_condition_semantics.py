@@ -510,7 +510,7 @@ def main():
     source_split_statistics = copy.deepcopy(metadata["splits"])
     protected = {str(p): digest(p) for p in source.iterdir() if p.is_file()}
     protected.update(metadata["protected_source_sha256"])
-    original_training = Path(__file__).resolve().parents[1] / '../SFT/training_data_64'
+    original_training = Path(__file__).resolve().parents[1] / '../training/SFT/training_data_64'
     for filename in ("train.jsonl", "val.jsonl"):
         p = original_training / filename
         protected[str(p)] = digest(p)

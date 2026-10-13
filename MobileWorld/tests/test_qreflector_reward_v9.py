@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import unittest
 
-PATH = Path(__file__).resolve().parents[1] / '../GRPO/reward_v9.py'
+PATH = Path(__file__).resolve().parents[1] / '../training/GRPO/reward_v9.py'
 spec = importlib.util.spec_from_file_location('reward_v9', PATH)
 reward = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(reward)

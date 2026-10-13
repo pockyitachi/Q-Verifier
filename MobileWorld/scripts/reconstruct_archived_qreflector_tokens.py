@@ -19,7 +19,7 @@ os.nice(10)
 
 ROOT = Path(__file__).resolve().parents[1]
 LOG = ROOT / 'traj_logs/v2_qverifier_retry'
-MODEL = ROOT / '../GRPO/qwen3_vl_distilled_dpo_grpo_8b/final'
+MODEL = ROOT / '../training/GRPO/qwen3_vl_distilled_dpo_grpo_8b/final'
 SOURCE = ROOT / 'src/mobile_world/reflection/base.py'
 AUDIT = ROOT / 'artifacts/reports/qreflector_mobileworld_v2_tokens_20261009/audit.json'
 OUT = AUDIT.parent / 'reconstructed'

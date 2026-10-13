@@ -14,8 +14,8 @@ upstream MobileWorld repository.
 The maintained additions include MAI and GUI-Owl reflection feedback, shared
 and v9 prompts, coordinate metadata, token accounting, environment recovery,
 training and offline evaluation scripts, and CPU tests. The old standalone
-layout placed Q-Verifier below MobileWorld. Dataset/model defaults in copied
-code now address the parent Q-Verifier directory instead.
+layout placed Q-Verifier below MobileWorld. Dataset/model defaults in maintained
+code address the parent Q-Verifier directory and its `training/` stages.
 
 ## Runtime assets
 

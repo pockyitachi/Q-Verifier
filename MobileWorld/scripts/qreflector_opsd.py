@@ -2,7 +2,7 @@
 """Prepare, audit, or explicitly train Q-Reflector with privileged-context OPSD.
 
 No GPU is selected and no model is loaded at import time. See
-docs/qreflector_opsd.md for the objective, limitations, and launch procedure.
+../training/docs/opsd.md for the objective, limitations, and launch procedure.
 """
 from __future__ import annotations
 

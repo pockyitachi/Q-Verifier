@@ -29,42 +29,40 @@ BEFORE, then check them against AFTER. Both images are supplied in one call;
 this does not isolate AFTER from condition generation. The online host receives
 a failure hint only for `No`, using the outcome/task evidence in `reason`.
 Generated conditions are retained in logs, rather than injected as separate host
-instructions. The older shared prompt is retained for reproducible comparisons.
+instructions. The two maintained prompt templates are [with condition generation](MobileWorld/src/mobile_world/reflection/prompts/with_condition_generation.txt) and [without condition generation](MobileWorld/src/mobile_world/reflection/prompts/without_condition_generation.txt). Their text is unchanged from v9 and its condition-generation ablation.
 
-See the [v9 prompt](MobileWorld/src/mobile_world/reflection/prompts/v9.txt),
+See the [v9 prompt](MobileWorld/src/mobile_world/reflection/prompts/with_condition_generation.txt),
 [protocol implementation](MobileWorld/src/mobile_world/reflection/protocol.py),
 and [feedback formatting](MobileWorld/src/mobile_world/reflection/format.py).
 
-## Code and workflows
+## Repository map
 
-| Component | Maintained entry point |
+| Directory | Contents |
 | --- | --- |
-| Online hosts, reflector backends, token accounting | [MobileWorld package](MobileWorld/src/mobile_world/) |
-| v9 BF16 LoRA SFT and validation-selected evaluation | [qreflector_sft_v9.py](MobileWorld/scripts/qreflector_sft_v9.py) |
-| Four-field teacher supervision and DPO-pair preparation | [qreflector_v9_distill_dpo.py](MobileWorld/scripts/qreflector_v9_distill_dpo.py) |
-| OPSD experiments | [qreflector_opsd.py](MobileWorld/scripts/qreflector_opsd.py) |
-| GRPO v9 reward definition | [reward_v9.py](GRPO/reward_v9.py), [reward notes](GRPO/REWARD_V9.txt) |
-| Offline evaluation and experiment orchestration | [MobileWorld/scripts](MobileWorld/scripts/) |
-| Prompt variants and frozen dataset contracts | [MobileWorld/docs/prompts](MobileWorld/docs/prompts/), [datasets](datasets/) |
-| CPU regression tests | [MobileWorld/tests](MobileWorld/tests/) |
+| [training/](training/README.md) | Original paper pipeline, v9 training contracts and method notes |
+| [MobileWorld/](MobileWorld/README.md) | Host agents, reflection integration, training/evaluation scripts and tests |
+| [datasets/](datasets/README.md) | Frozen data-release manifests and prompt contracts |
+| [docs/](docs/README.md) | Repository guide and experiment-specific records |
 
-These are separate experimental workflows, not a claim that every released
-model went through SFT, distillation, OPSD, DPO and GRPO in that order. Legacy
-trainer source remains in `SFT/`, `Teacher_Student_Distill/`,
-`Rejection_Sampling_DPO/`, and `GRPO/`. Generated model exports, duplicate dataset
-copies, candidate dumps and raw experiment results are external artifacts,
-excluded from Git. Old manuscript drafts and duplicated historical documentation
-are not part of the maintained source tree.
+## Training workflows
 
-The sole maintained [DPO dataset](Rejection_Sampling_DPO/README.md) contains
-**559 four-field pairs covering 263 distinct transitions from the 882-instance
-training pool**. It consolidates legacy and recent candidates against current
-v9 labels, excludes quarantined sources, and removes duplicate pairs. The
-[frozen manifest](Rejection_Sampling_DPO/DPO_MANIFEST.json) records its construction
-and hashes. The latest Luna supervised distillation used 849 accepted sources;
-DPO and GRPO optimization have not been launched for this consolidated dataset.
+The original paper's SFT, teacher distillation, DPO and GRPO implementations
+remain under `training/`, with their data-corruption and error-correction tools.
+Their algorithms and defaults are preserved. Start with the
+[training guide](training/README.md) for the individual stages.
 
-## Setup and repository layout
+The later v9 experiments use separate BF16 LoRA SFT, teacher-correction and OPSD
+entry points under `MobileWorld/scripts/`. These are distinct workflows: do not
+infer that every checkpoint passed through every method or that the old and new
+prompts, datasets and objectives are interchangeable.
+
+The sole maintained [DPO dataset](training/Rejection_Sampling_DPO/README.md)
+contains **559 four-field pairs covering 263 transitions from the 882-instance
+source pool**. The [manifest](training/Rejection_Sampling_DPO/DPO_MANIFEST.json)
+pins its construction and hashes. The latest Luna supervision accepted 849
+sources. This data consolidation did not run DPO or GRPO optimization.
+
+## Setup
 
 ```bash
 git clone https://github.com/pockyitachi/Q-Verifier.git
@@ -73,18 +71,15 @@ uv sync --extra dev
 uv run mobile-world --help
 ```
 
-MobileWorld uses Python 3.12. Training requires its own compatible GPU
-environment. Weights, screenshot datasets, Android images, application database
-volumes, credentials, and full experiment logs are external assets; cloning
-source alone does not provision an experiment. Launch scripts retain explicit
-experiment settings, including GPU assignments, and should be reviewed before
-starting a new run.
+MobileWorld uses Python 3.12. Training uses the environment recorded for the
+chosen workflow; the [original environment recipe](training/environment/README.md)
+is retained separately. Weights, screenshot datasets, Android images, database
+volumes, credentials and full experiment logs are external assets.
 
-Read the [repository layout and test instructions](docs/REPOSITORY_LAYOUT.md)
-and [MobileWorld provenance and runtime requirements](MobileWorld/UPSTREAM.md).
-Recorded online configuration metadata is in
-[docs/experiments](docs/experiments/); it is not a substitute for the original
-trajectories or a new evaluation.
+Read the [layout and test guide](docs/REPOSITORY_LAYOUT.md) before running scripts.
+Recorded GPU assignments describe past runs and must be checked before a new
+launch. [Experiment records](docs/experiments/README.md) document their own
+versions; they are not a consolidated results table.
 
 ## Attribution
 

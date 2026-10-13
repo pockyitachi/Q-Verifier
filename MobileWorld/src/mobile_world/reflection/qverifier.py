@@ -20,7 +20,7 @@ from mobile_world.runtime.utils.models import JSONAction
 
 DEFAULT_MODEL_PATH = (
     Path(__file__).resolve().parents[3]
-    / '../GRPO/qwen3_vl_distilled_dpo_grpo_8b/final'
+    / '../training/GRPO/qwen3_vl_distilled_dpo_grpo_8b/final'
 )
 
 

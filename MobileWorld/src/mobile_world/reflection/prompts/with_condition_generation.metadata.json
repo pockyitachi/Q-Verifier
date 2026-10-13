@@ -1,0 +1,24 @@
+{
+  "name": "with_condition_generation",
+  "status": "maintained_v9_template",
+  "prompt": "with_condition_generation.txt",
+  "prompt_sha256": "e7606164a8dd466dccf3a02b7413d1f8f6fc386fec372ca7d5af11d698a72ea2",
+  "output_fields_in_order": [
+    "precondition",
+    "postcondition",
+    "reason",
+    "answer"
+  ],
+  "input_fields": [
+    "goal",
+    "history",
+    "action",
+    "before_image",
+    "after_image"
+  ],
+  "single_call": true,
+  "both_images_visible_from_start": true,
+  "paired_template": "without_condition_generation.txt",
+  "online_protocol": "v9_geometry",
+  "note": "Renamed without changing the frozen v9 text. Conditions are generated before the evidence check in the response; AFTER is not technically hidden during generation."
+}

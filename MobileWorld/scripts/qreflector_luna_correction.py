@@ -3,7 +3,7 @@
 
 Student rollouts are fresh. An external teacher edits them using train-only
 references. The student learns teacher responses with assistant-only CE under
-the original, unprivileged v6 prompt. See docs/qreflector_luna_correction.md.
+the original, unprivileged v6 prompt. See ../docs/experiments/luna-correction-v6.md.
 """
 from __future__ import annotations
 

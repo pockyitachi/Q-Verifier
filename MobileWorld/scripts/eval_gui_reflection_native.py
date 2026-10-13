@@ -42,7 +42,7 @@ def main():
     parser.add_argument('--model', choices=['gui-reflection', 'qreflector'], required=True)
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--data-dir', type=Path, default=ROOT / 'artifacts/datasets/gui_reflection_task_suite')
-    parser.add_argument('--adapter', type=Path, default=ROOT / '../GRPO/qwen3_vl_distilled_dpo_grpo_8b/final')
+    parser.add_argument('--adapter', type=Path, default=ROOT / '../training/GRPO/qwen3_vl_distilled_dpo_grpo_8b/final')
     parser.add_argument('--gpu-uuid', default=GPU0_UUID)
     parser.add_argument('--limit-pairs', type=int, default=603)
     parser.add_argument('--memory-cap-gib', type=float, default=32)
