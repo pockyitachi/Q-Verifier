@@ -1,7 +1,8 @@
 {
   "upstream_repository": "https://github.com/Tongyi-MAI/MobileWorld",
   "upstream_commit": "2c43f6a6160fa37596a717194f2301e93fbed559",
-  "source_workspace": "/shared/linqiang/MobileWorld",
+  "source_workspace": "..",
+  "source_workspace_path_base": "repository_root",
   "file_count": 530,
   "source_files": [
     {

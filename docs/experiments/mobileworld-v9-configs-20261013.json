@@ -1,9 +1,10 @@
 {
   "scope": "Current MAI-UI and GUI-Owl online v9 experiments. Extracted configuration values; runtime adapter source must be consulted for effective request parameters.",
+  "path_base": "repository_root",
   "runs": [
     {
       "run": "mobileworld_gui_owl_gpt52117_v9_geometry_answerfix_noearly_20261011_gpu7_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/gui_owl_gpt52_reflection/mobileworld_gui_owl_gpt52117_v9_geometry_answerfix_noearly_20261011_gpu7_p4/config.json",
+      "config": "../artifacts/evaluations/gui_owl_gpt52_reflection/mobileworld_gui_owl_gpt52117_v9_geometry_answerfix_noearly_20261011_gpu7_p4/config.json",
       "config_sha256": "50729bc2de23d1fe329fac98c5f4af915c2910ad21e152b99ac8a56c122fb429",
       "settings": {
         "actor_model": "mPLUG/GUI-Owl-1.5-8B-Instruct",
@@ -35,7 +36,7 @@
     },
     {
       "run": "mobileworld_gui_owl_gui117_v9_geometry_answerfix_noearly_20261011_gpu7_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/gui_owl_gui_reflection/mobileworld_gui_owl_gui117_v9_geometry_answerfix_noearly_20261011_gpu7_p4/config.json",
+      "config": "../artifacts/evaluations/gui_owl_gui_reflection/mobileworld_gui_owl_gui117_v9_geometry_answerfix_noearly_20261011_gpu7_p4/config.json",
       "config_sha256": "d9b9e3d3386711eefaef91b928d0ceeb00743099a7a7d4cb2b5b7c4f86a96d08",
       "settings": {
         "actor_model": "mPLUG/GUI-Owl-1.5-8B-Instruct",
@@ -67,7 +68,7 @@
     },
     {
       "run": "mobileworld_gui_owl_haiku117_v9_geometry_answerfix_noearly_20261011_gpu2_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/gui_owl_haiku_reflection/mobileworld_gui_owl_haiku117_v9_geometry_answerfix_noearly_20261011_gpu2_p4/config.json",
+      "config": "../artifacts/evaluations/gui_owl_haiku_reflection/mobileworld_gui_owl_haiku117_v9_geometry_answerfix_noearly_20261011_gpu2_p4/config.json",
       "config_sha256": "a07312d1a71b7391dc548261221198f5f2adc1ac745614b8b48f6cd391addc5b",
       "settings": {
         "actor_model": "mPLUG/GUI-Owl-1.5-8B-Instruct",
@@ -98,7 +99,7 @@
     },
     {
       "run": "mobileworld_gui_owl_qreflector_v9_geometry117_noearly_20261010_gpu7_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/gui_owl_qreflector_v9/mobileworld_gui_owl_qreflector_v9_geometry117_noearly_20261010_gpu7_p4/config.json",
+      "config": "../artifacts/evaluations/gui_owl_qreflector_v9/mobileworld_gui_owl_qreflector_v9_geometry117_noearly_20261010_gpu7_p4/config.json",
       "config_sha256": "8979d385334ecaa5accefd2b415c0ea134e2313b82e6201be831e88428528f17",
       "settings": {
         "actor_model": "mPLUG/GUI-Owl-1.5-8B-Instruct",
@@ -111,10 +112,10 @@
         "reflector_model": "Q-Reflector-Sol-round2-geometry",
         "reflector_dtype": "bfloat16",
         "reflector_quantization": null,
-        "reflector_adapter": "/shared/linqiang/MobileWorld/artifacts/training/qreflector_sol_round2_geometry_20261009_gpu2/train/final",
+        "reflector_adapter": "../artifacts/training/qreflector_sol_round2_geometry_20261009_gpu2/train/final",
         "reflector_adapter_sha256": "9b7c69f82d2b8b39f6ea9444e41e9bde6262674b17132336601177abf9cd1ab9",
-        "reflector_base": "/shared/linqiang/MobileWorld/artifacts/models/qreflector_base_bf16/Qwen3-VL-8B-Instruct",
-        "reflector_processor": "/shared/linqiang/MobileWorld/artifacts/training/qreflector_sol_round1_v9_epoch9_20261008_gpu7/train/final",
+        "reflector_base": "../artifacts/models/qreflector_base_bf16/Qwen3-VL-8B-Instruct",
+        "reflector_processor": "../artifacts/training/qreflector_sol_round1_v9_epoch9_20261008_gpu7/train/final",
         "reflector_protocol": "v9_geometry",
         "reflector_max_tokens": 1024,
         "reflector_temperature": 0.0,
@@ -134,7 +135,7 @@
     },
     {
       "run": "mobileworld_gui_owl_self117_v9_geometry_answerfix_noearly_20261011_gpu7_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/gui_owl_self_reflection/mobileworld_gui_owl_self117_v9_geometry_answerfix_noearly_20261011_gpu7_p4/config.json",
+      "config": "../artifacts/evaluations/gui_owl_self_reflection/mobileworld_gui_owl_self117_v9_geometry_answerfix_noearly_20261011_gpu7_p4/config.json",
       "config_sha256": "ac95cee160508da5b488728f8a662409d42bb34fff6a3e9417a0b51b4d489e9f",
       "settings": {
         "actor_model": "mPLUG/GUI-Owl-1.5-8B-Instruct",
@@ -167,7 +168,7 @@
     },
     {
       "run": "mobileworld_mai_gpt52_117_v9_geometry_noearly_20261011_gpu7_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/mai_gpt52_reflection/mobileworld_mai_gpt52_117_v9_geometry_noearly_20261011_gpu7_p4/config.json",
+      "config": "../artifacts/evaluations/mai_gpt52_reflection/mobileworld_mai_gpt52_117_v9_geometry_noearly_20261011_gpu7_p4/config.json",
       "config_sha256": "3bb8da125204af0965fe12009536db9ca861a9e3f38719836b4342cee2382707",
       "settings": {
         "actor_model": "Tongyi-MAI/MAI-UI-8B",
@@ -195,7 +196,7 @@
     },
     {
       "run": "mobileworld_mai_gui117_v9_geometry_noearly_20261011_gpu7_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/mai_gui_reflection/mobileworld_mai_gui117_v9_geometry_noearly_20261011_gpu7_p4/config.json",
+      "config": "../artifacts/evaluations/mai_gui_reflection/mobileworld_mai_gui117_v9_geometry_noearly_20261011_gpu7_p4/config.json",
       "config_sha256": "fd2408e55e7019c0d586650e365ccf3ba9ebc66ceb11332d848d08125bf05e25",
       "settings": {
         "actor_model": "Tongyi-MAI/MAI-UI-8B",
@@ -223,7 +224,7 @@
     },
     {
       "run": "mobileworld_mai_haiku117_v9_geometry_noearly_20261011_gpu2_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/mai_haiku_reflection/mobileworld_mai_haiku117_v9_geometry_noearly_20261011_gpu2_p4/config.json",
+      "config": "../artifacts/evaluations/mai_haiku_reflection/mobileworld_mai_haiku117_v9_geometry_noearly_20261011_gpu2_p4/config.json",
       "config_sha256": "a26261e4189409a04e72a1d60dafc50b1ed88ffbdbe40a499976ec72437ddd41",
       "settings": {
         "actor_model": "Tongyi-MAI/MAI-UI-8B",
@@ -250,7 +251,7 @@
     },
     {
       "run": "mobileworld_mai_legacy_qverifier117_v9_geometry_noearly_20261011_gpu2_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/mai_legacy_qverifier/mobileworld_mai_legacy_qverifier117_v9_geometry_noearly_20261011_gpu2_p4/config.json",
+      "config": "../artifacts/evaluations/mai_legacy_qverifier/mobileworld_mai_legacy_qverifier117_v9_geometry_noearly_20261011_gpu2_p4/config.json",
       "config_sha256": "0befc8b80d21f42073d7be1358e849cdc8c355a528b9f762138bd69ef5f9145a",
       "settings": {
         "actor_model": "Tongyi-MAI/MAI-UI-8B",
@@ -259,9 +260,9 @@
         "reflector_model": "legacy-qwen3_vl_distilled_dpo_grpo_8b",
         "reflector_dtype": "original prequantized bnb-4bit base + retained rank-16 LoRA",
         "reflector_quantization": "original prequantized bnb-4bit",
-        "reflector_adapter": "/shared/linqiang/MobileWorld/Q-Verifier/GRPO/qwen3_vl_distilled_dpo_grpo_8b/final",
+        "reflector_adapter": "GRPO/qwen3_vl_distilled_dpo_grpo_8b/final",
         "reflector_adapter_sha256": "09e73c6cd77bc2bba9d3045ac3232e06216484e4ccac4a0c475ffe6acad01e8c",
-        "reflector_base": "/shared/linqiang/MobileWorld/artifacts/models/qreflector_base/qwen3-vl-8b-instruct-unsloth-bnb-4bit",
+        "reflector_base": "../artifacts/models/qreflector_base/qwen3-vl-8b-instruct-unsloth-bnb-4bit",
         "reflector_protocol": "v9_geometry",
         "reflector_max_tokens": 1024,
         "reflector_temperature": 0.0,
@@ -281,7 +282,7 @@
     },
     {
       "run": "mobileworld_mai_qreflector_v9_geometry117_noearly_20261010_gpu2_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/mai_qreflector_v9/mobileworld_mai_qreflector_v9_geometry117_noearly_20261010_gpu2_p4/config.json",
+      "config": "../artifacts/evaluations/mai_qreflector_v9/mobileworld_mai_qreflector_v9_geometry117_noearly_20261010_gpu2_p4/config.json",
       "config_sha256": "c6b39681d99522e900fb4879cd4f04ea8b138f10594bcc6dd8d2d270a2d424bf",
       "settings": {
         "actor_model": "Tongyi-MAI/MAI-UI-8B",
@@ -290,10 +291,10 @@
         "reflector_model": "Q-Reflector-Sol-round2-geometry",
         "reflector_dtype": "bfloat16",
         "reflector_quantization": null,
-        "reflector_adapter": "/shared/linqiang/MobileWorld/artifacts/training/qreflector_sol_round2_geometry_20261009_gpu2/train/final",
+        "reflector_adapter": "../artifacts/training/qreflector_sol_round2_geometry_20261009_gpu2/train/final",
         "reflector_adapter_sha256": "9b7c69f82d2b8b39f6ea9444e41e9bde6262674b17132336601177abf9cd1ab9",
-        "reflector_base": "/shared/linqiang/MobileWorld/artifacts/models/qreflector_base_bf16/Qwen3-VL-8B-Instruct",
-        "reflector_processor": "/shared/linqiang/MobileWorld/artifacts/training/qreflector_sol_round1_v9_epoch9_20261008_gpu7/train/final",
+        "reflector_base": "../artifacts/models/qreflector_base_bf16/Qwen3-VL-8B-Instruct",
+        "reflector_processor": "../artifacts/training/qreflector_sol_round1_v9_epoch9_20261008_gpu7/train/final",
         "reflector_protocol": "v9_geometry",
         "reflector_max_tokens": 1024,
         "reflector_temperature": 0.0,
@@ -312,7 +313,7 @@
     },
     {
       "run": "mobileworld_mai_self117_v9_geometry_noearly_20261011_gpu2_p4",
-      "config": "/shared/linqiang/MobileWorld/artifacts/evaluations/mai_self_reflection/mobileworld_mai_self117_v9_geometry_noearly_20261011_gpu2_p4/config.json",
+      "config": "../artifacts/evaluations/mai_self_reflection/mobileworld_mai_self117_v9_geometry_noearly_20261011_gpu2_p4/config.json",
       "config_sha256": "44d9009616cbb88e7b88c9942252adbeceee3f97a7e55fdf1dfa5f2b61b9df3e",
       "settings": {
         "actor_model": "Tongyi-MAI/MAI-UI-8B",
@@ -347,7 +348,7 @@
     "paper_url": "https://arxiv.org/abs/2506.08012",
     "official_code_url": "https://github.com/penghao-wu/GUI_Reflection",
     "checkpoint_selection": "Official Action Verification evaluation uses this pretrain checkpoint: internvl_chat/eval/launch_eval.sh",
-    "local_directory": "/shared/linqiang/MobileWorld/artifacts/models/gui_reflection/GUI_Reflection_8b_pretrain",
+    "local_directory": "../artifacts/models/gui_reflection/GUI_Reflection_8b_pretrain",
     "verified_at_utc": "2026-09-30T01:58:40.889935+00:00",
     "total_bytes": 16156787295,
     "file_count": 18,

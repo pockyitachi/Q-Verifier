@@ -23,9 +23,6 @@ EXPECTED_CAPTION = "Here are some beautiful flowers."
 REQUIRED_IMAGES = ["image1.jpeg", "image2.jpeg", "image3.jpeg", "image4.jpeg"]
 ASSETS_PATH = "/app/service/src/mobile_world/tasks/definitions/mastodon/assets/flowerPhotos"
 
-# For local development:
-# ASSETS_PATH = "/home/admin/zhangxu/mobile_world/src/mobile_world/tasks/definitions/mastodon/assets/flowerPhotos"
-
 
 def _check_consistency(
     username: str, expected_caption: str, expected_images: list[str], assets_path: str

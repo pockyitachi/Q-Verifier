@@ -2,6 +2,7 @@
 """Package a manual visual audit; never modify a dataset or recompute scores."""
 from __future__ import annotations
 
+import argparse
 import csv
 import hashlib
 import json
@@ -13,7 +14,22 @@ ROOT = Path(__file__).resolve().parents[1]
 PRIOR = ROOT / "artifacts/analysis/qreflector_error_overlap_20261009"
 OUT = ROOT / "artifacts/analysis/qreflector_persistent35_review_20261009"
 DATA = ROOT / '../datasets/condition_generation_v9_after_evidence'
-SOURCE = Path("/shared/linqiang/android_world_plus/android_world/task_evals/single/browser.py")
+DEFAULT_BROWSER_SOURCE = Path(
+    "artifacts/vendor/android_world_plus/android_world/task_evals/single/browser.py"
+)
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--browser-source", type=Path, default=DEFAULT_BROWSER_SOURCE,
+        help="BrowserDraw task source; relative paths are based on MobileWorld/.",
+    )
+    return parser.parse_args(argv)
+
+
+def browser_source(path):
+    return (ROOT / path).resolve()
 
 
 def read_jsonl(path):
@@ -28,7 +44,12 @@ def dump(path, obj):
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n")
 
 
-def main():
+def main(argv=None):
+    source = browser_source(parse_args(argv).browser_source)
+    if not source.is_file():
+        raise FileNotFoundError(
+            f"BrowserDraw source not found: {source}; set --browser-source."
+        )
     summary = json.loads((PRIOR / "summary.json").read_text())
     ids = summary["groups"]["all_24"]["always_wrong_ids"]
     notes = json.loads((OUT / "notes.json").read_text())
@@ -48,10 +69,10 @@ def main():
     checks = {p: sha(Path(p)) == expected for p, expected in protected.items()}
     assert all(checks.values()), "A protected source changed; inspect before packaging."
 
-    source_lines = SOURCE.read_text().splitlines()
+    source_lines = source.read_text().splitlines()
     excerpt = "\n".join(f"{i + 1}: {source_lines[i]}" for i in range(569, 596))
     (OUT / "browserdraw_source_evidence.txt").write_text(
-        f"Source: {SOURCE}\nSHA256: {sha(SOURCE)}\n"
+        f"Source: {source}\nSHA256: {sha(source)}\n"
         "The local implementation matches the visible task layout. The exact HTML "
         "loaded during the historical rollout was not recovered; this is supporting "
         "source evidence, not a verified historical runtime dump.\n\n" + excerpt + "\n"

@@ -2,7 +2,9 @@
   "created_utc": "2026-10-07T19:00:59.347053+00:00",
   "status": "frozen",
   "dataset_version": "condition_generation_v9_after_evidence",
-  "source": "/shared/linqiang/MobileWorld/Q-Verifier/datasets/condition_generation_v8_adjudicated",
+  "path_base": "manifest_directory",
+  "original_manifest_sha256": "1757540cd9a8b947b0403b9dc245b1643b9ac45a976c5d62eb699b89544c56b8",
+  "source": "../condition_generation_v8_adjudicated",
   "source_manifest_sha256": "ac67f86fbf97458d2ea10ea83cddf55b8f85fc2ccd2a2022229a7e6b4ed924ff",
   "source_artifact_sha256": {
     "DATASET_MANIFEST.json": "ac67f86fbf97458d2ea10ea83cddf55b8f85fc2ccd2a2022229a7e6b4ed924ff",
@@ -67,7 +69,7 @@
     "train-243",
     "train-589"
   ],
-  "prompt_source": "/shared/linqiang/MobileWorld/docs/prompts/qreflector_condition_check_v2_after_evidence.txt",
+  "prompt_source": "../../MobileWorld/src/mobile_world/reflection/prompts/with_condition_generation.txt",
   "prompt_sha256": "e7606164a8dd466dccf3a02b7413d1f8f6fc386fec372ca7d5af11d698a72ea2",
   "changes": {
     "train": {

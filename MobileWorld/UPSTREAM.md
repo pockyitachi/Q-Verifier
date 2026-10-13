@@ -37,8 +37,8 @@ git submodule update --init --recursive
 
 ## Existing server runs
 
-The import does not move, overwrite or relaunch the running experiments under
-`/shared/linqiang/MobileWorld/artifacts`. Those runs retain their original
-paths and frozen source snapshots. This directory is the maintained source
+The original experiment store is `../artifacts/`, relative to the repository
+root. Those runs retain their original paths and frozen source snapshots.
+This directory is the maintained source
 for subsequent changes. Do not continue editing the old outer checkout and
 expect those edits to appear in this repository automatically.
