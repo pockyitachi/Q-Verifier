@@ -9,7 +9,7 @@ import sys
 
 import pytest
 
-DATA = Path(__file__).resolve().parents[2] / "Rejection_Sampling_DPO"
+DATA = Path(__file__).resolve().parents[2] / "training" / "Rejection_Sampling_DPO"
 spec = importlib.util.spec_from_file_location("frozen_dpo", DATA / "freeze_dpo_pairs.py")
 frozen = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(frozen)

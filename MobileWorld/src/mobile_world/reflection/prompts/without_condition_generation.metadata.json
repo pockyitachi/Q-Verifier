@@ -1,0 +1,42 @@
+{
+  "name": "without_condition_generation",
+  "status": "prompt_template_only_not_registered_or_launched",
+  "source_prompt": "with_condition_generation.txt",
+  "source_sha256": "e7606164a8dd466dccf3a02b7413d1f8f6fc386fec372ca7d5af11d698a72ea2",
+  "prompt": "without_condition_generation.txt",
+  "prompt_sha256": "99dcfa64c6745531bdec58abd797d594b06d74e3cff29d1477c28fae92c94955",
+  "output_fields_in_order": [
+    "reason",
+    "answer"
+  ],
+  "judgment_target": "Correct execution of the single action AND useful progress toward the task.",
+  "ablation": "Remove explicit precondition/postcondition generation and the associated condition-check sections; retain evidence-grounded rationale and final verdict.",
+  "input_contract": {
+    "context_fields": [
+      "goal",
+      "history",
+      "action"
+    ],
+    "history_steps": 3,
+    "history_fields": [
+      "step",
+      "action"
+    ],
+    "screenshots": [
+      "BEFORE",
+      "AFTER"
+    ],
+    "image_max_side": 1024,
+    "dynamic_geometry": "Use the same geometry block and coordinate normalization as v9_geometry, injected before === Context ===."
+  },
+  "paired_inference_controls": [
+    "same checkpoint",
+    "same examples and labels",
+    "same context and images",
+    "same geometry",
+    "same decoding configuration and max_new_tokens=1024",
+    "same answer parser"
+  ],
+  "online_feedback_note": "For a condition-generation-only online ablation, apply the same reason extraction, truncation, and No-only injection policy to both arms. The existing v9 formatter specially extracts Postcondition check and Task progress from a structured reason, so routing a plain rationale through its fallback does not by itself establish identical feedback processing.",
+  "scope_note": "With a fixed checkpoint this is an inference-prompt ablation. A training ablation additionally requires comparable two-field targets and training."
+}

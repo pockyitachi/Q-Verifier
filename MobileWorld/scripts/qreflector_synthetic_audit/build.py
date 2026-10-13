@@ -25,7 +25,7 @@ from review import REVIEWS
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / '../datasets/condition_generation_v4_no_subgoal'
 OUTPUT = ROOT / '../datasets/condition_generation_v5_synthetic_audited'
-RAW = ROOT / '../SFT/training_data_corruption_1'
+RAW = ROOT / '../training/SFT/training_data_corruption_1'
 OLD_REVIEW = ROOT / '../review/condition_generation_v4_no_subgoal'
 
 def sha(p):
@@ -58,8 +58,8 @@ def main():
     if OUTPUT.exists():
         raise FileExistsError(f"Refusing to overwrite {OUTPUT}")
     protected_paths = [p for p in SOURCE.iterdir() if p.is_file()]
-    for directory in [RAW, ROOT / '../SFT/training_data_64',
-                      ROOT / '../SFT/training_data_filtered',
+    for directory in [RAW, ROOT / '../training/SFT/training_data_64',
+                      ROOT / '../training/SFT/training_data_filtered',
                       ROOT / '../testing_data_androidworld']:
         protected_paths.extend(p for p in directory.glob("*.json*") if p.is_file())
     protected = {str(p): sha(p) for p in protected_paths}
@@ -94,7 +94,7 @@ def main():
     # Check actual goal+action overlap with the generic image-swap generator.
     generic_keys = set()
     generic_files = []
-    for p in (ROOT / '../Data_Corruption/corrupted_data').glob("*.jsonl"):
+    for p in (ROOT / '../training/Data_Corruption/corrupted_data').glob("*.jsonl"):
         generic_files.append({"path": str(p), "sha256": sha(p)})
         for row in read(p):
             goal, _, transition, _, _, _ = parse_source(row)

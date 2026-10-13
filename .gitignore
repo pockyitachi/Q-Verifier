@@ -180,3 +180,35 @@ Thumbs.db
 /Teacher_Student_Distill/subgoal_mismatch_indices.json
 /Data_Corruption/corrupted_data/
 /Rejection_Sampling_DPO/candidate_responses*.jsonl
+
+# Stage source now lives under training/. Original server locations contain
+# external assets and local compatibility links only.
+/SFT/
+/Teacher_Student_Distill/
+/Rejection_Sampling_DPO/
+/GRPO/
+/Data_Corruption/
+/Self_Improvement/
+/setup_environment.sh
+/requirements.txt
+
+# Generated training assets in the maintained layout.
+/training/*/qwen*/
+/training/SFT/training_data*/
+/training/SFT/Sample_val_res/
+/training/SFT/test_results_*.json
+/training/Teacher_Student_Distill/gpt_data*/
+/training/Teacher_Student_Distill/review_*.txt
+/training/Teacher_Student_Distill/*_indices.json
+/training/Data_Corruption/corrupted_data/
+/training/Rejection_Sampling_DPO/candidate_responses*.jsonl
+/training/Self_Improvement/corrections*.jsonl
+/training/Self_Improvement/error_analysis*.json
+
+# Only the current v9 dataset contract and two canonical prompt templates
+# are maintained. Existing historical server copies are external artifacts.
+!/datasets/README.md
+/datasets/condition_generation_v6_user_reviewed/
+/datasets/condition_generation_v7_condition_check/
+/datasets/condition_generation_v8_adjudicated/
+/MobileWorld/docs/prompts/

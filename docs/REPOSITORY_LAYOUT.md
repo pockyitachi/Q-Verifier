@@ -1,97 +1,100 @@
-# Maintained repository layout
+# Repository layout
 
-`pockyitachi/Q-Verifier` is the project repository. MobileWorld is its online
-evaluation and host-agent support component.
+`pockyitachi/Q-Verifier` is the maintained project repository. Its tracked top
+level contains four functional directories:
 
 ```text
 Q-Verifier/
   README.md
+  training/
+    README.md                  # original paper workflow and v9 entry points
+    SFT/                       # original SFT, evaluation and shared parser
+    Teacher_Student_Distill/    # original teacher-response distillation
+    Rejection_Sampling_DPO/     # original tools + sole frozen v9 pair dataset
+    GRPO/                      # original trainer + separate v9 reward
+    Data_Corruption/           # original negative-construction tool
+    Self_Improvement/          # original error-correction workflow
+    environment/               # original dependency/setup recipe
+    docs/                      # additional training methods, including OPSD
   MobileWorld/
-    pyproject.toml, uv.lock, LICENSE, UPSTREAM.md
-    src/mobile_world/       # hosts, reflection, runtime, task evaluators
-    scripts/               # current training, data conversion and evaluation
-    tests/                 # CPU unit tests and integration checks with mocks
-    docs/prompts/          # saved prompt variants
-    docker/                # recipes and scripts; provision runtime data separately
-    resources/             # pinned app-source submodules
-    artifacts/             # ignored: models, environments, runs and screenshots
-  GRPO/                    # legacy trainer and current v9 reward definition
-  SFT/                     # legacy trainers and shared output parser
-  Teacher_Student_Distill/  # legacy distillation workflow
-  Rejection_Sampling_DPO/   # sole frozen DPO dataset, validator and legacy tools
-  datasets/                # frozen contracts tracked; row data/images external
-  docs/experiments/        # compact provenance and configuration records
+    src/mobile_world/          # hosts, reflectors, runtime and task evaluators
+    scripts/                   # current experiment and training entry points
+    tests/                     # CPU regression and integration checks
+    docs/                      # benchmark setup guides
+    docker/, resources/        # container recipes and pinned app sources
+    artifacts/                 # ignored runtime assets
+  datasets/                    # one v9 release contract; row files/images external
+  docs/
+    README.md                  # documentation index
+    experiments/               # dated protocol/configuration records
 ```
 
-## Source and artifacts
+## Running code
 
-Run new commands from `MobileWorld/` unless a legacy workflow says otherwise.
-Current scripts remain in this directory to preserve their shared imports and
-their `artifacts/` layout. Their paths to the legacy training folders and frozen
-datasets now resolve to the parent Q-Verifier directory.
+Run original-paper tools from their stage directory, for example
+`cd training/SFT`. Their relative model/data arguments address sibling training
+stages. Run the later experiment scripts from `MobileWorld/`; they share imports,
+evaluation helpers and an `artifacts/` layout there. See
+[training/README.md](../training/README.md) for the distinction.
 
-Install the support package in a dedicated environment:
+The root no longer presents the original global setup script as a universal
+installer. Its source and requirements are preserved under `training/environment/`.
+MobileWorld dependencies are installed from `MobileWorld/pyproject.toml` and
+`uv.lock`. Use the recorded training environment for each model workflow.
 
-```bash
-cd MobileWorld
-uv sync --extra dev
-uv run mobile-world --help
-```
+## External assets and existing server paths
 
-The project uses Python 3.12. Training additionally needs the relevant PyTorch,
-Transformers, PEFT and quantization dependencies; existing experiments record
-their environment under their external artifact directory. Importing this
-source does not install packages, allocate GPUs, call teachers or start Docker.
+Weights, duplicate data exports, screenshot stores, raw results and generated
+teacher/candidate responses are ignored. A fresh clone requires separately
+provisioned assets. The frozen 559-pair DPO file, its manifest/audit and MobileWorld
+fixtures remain tracked. DPO image paths resolve relative to
+`training/Rejection_Sampling_DPO/` and expect the existing images under
+`training/SFT/training_data_64/images/`.
 
-Provide frozen dataset row files and referenced screenshots below the existing
-`datasets/` locations before running data-dependent tests or training. The
-tracked `FROZEN.json` and prompt templates describe the expected contracts.
-Some historical intermediate datasets were intentionally removed; do not
-silently reconstruct them and claim they are the original data.
+On the current server, the original stage directories still contain ignored
+runtime data and model weights. Local compatibility links expose those assets
+under `training/` and keep old source paths usable. These links are not committed;
+the GitHub tree shows the maintained source layout. Data and models were not
+copied or moved, and frozen pair IDs, prompt bytes and hashes were preserved.
+Only the v9 dataset contract is tracked. The named prompt pair lives in
+`MobileWorld/src/mobile_world/reflection/prompts/`; the dataset prompt path is
+a relative link to `with_condition_generation.txt`.
 
-Weights and experiment outputs belong under `MobileWorld/artifacts/` or an
-explicit path accepted by the selected script. A source-only clone does not
-contain these assets. The current server's original artifact store is retained
-at `/shared/linqiang/MobileWorld/artifacts`.
-
-Existing server copies of `Results/`, legacy `SFT/training_data*` directories,
-model/tokenizer exports, teacher response dumps and candidate dumps are also
-external assets. They remain at their original local paths, but are excluded
-from Git. A fresh source checkout requires separately provisioned data and
-weights. The sole frozen DPO pair file, its manifest/audit, dataset contracts,
-source code and MobileWorld task fixtures remain tracked.
+The outer `/shared/linqiang/MobileWorld` workspace and its
+`/shared/linqiang/MobileWorld/artifacts` store retain the original experiment
+paths and frozen source snapshots. The maintained checkout is nested at
+`/shared/linqiang/MobileWorld/Q-Verifier`. This server arrangement is not required
+by a fresh clone. Editing the outer checkout does not update this repository.
 
 ## Tests
 
-With the support dependencies installed, run selected CPU-only checks from
-`MobileWorld/`:
+From the repository root, with pytest installed:
+
+```bash
+python -m pytest MobileWorld/tests/test_frozen_dpo_pairs.py
+python training/Rejection_Sampling_DPO/freeze_dpo_pairs.py validate
+```
+
+The validator requires all externally provisioned images; the CPU dataset tests
+do not. With the MobileWorld dependencies installed, run from `MobileWorld/`:
 
 ```bash
 PYTHONPATH=src python -m pytest tests/test_qreflector_v9_distill_dpo.py \
   tests/test_qreflector_reward_v9.py tests/unit/reflection/test_v9_protocol.py
 ```
 
-The protocol parity test also requires the frozen v9 prompt contract in
-`../datasets/condition_generation_v9_after_evidence/prompt_template.txt`.
-Tests that explicitly check full datasets or local model files require those
-external assets; they are not smoke tests for a source-only installation.
-The GUI-Reflection native-prompt checks skip when its separately provisioned
-upstream source is absent from `MobileWorld/artifacts/vendor/GUI_Reflection`.
+The protocol test uses the frozen v9 prompt contract in `../datasets/`.
+Data-dependent tests additionally require the row files and image stores.
+GUI-Reflection native-prompt tests require its separately provisioned upstream
+source under `MobileWorld/artifacts/vendor/GUI_Reflection`.
 
-Run `tests/unit/reflection/test_qreflector_opsd.py` in the dedicated training
-environment, not the MobileWorld host environment. The recorded environment
-uses Transformers 4.57.3 and PEFT 0.18.0; its tiny CPU multimodal integration test
-is not compatible with the newer Transformers interface in the host environment.
-No global environment or training dependency was changed during this import.
+The OPSD multimodal tests use Transformers 4.57.3 and PEFT 0.18.0 in their
+recorded native training environment. They are not compatible with every newer
+host-environment Transformers release; see [OPSD notes](../training/docs/opsd.md).
 
-## Historical workspaces
+## Provenance
 
-The previous outer `/shared/linqiang/MobileWorld` checkout still supports
-in-progress runs. Its Git remote is upstream MobileWorld. The maintained
-Q-Verifier checkout is currently nested at
-`/shared/linqiang/MobileWorld/Q-Verifier`; this physical server arrangement is
-not required by a fresh clone.
-
-`Agent-SAMA-main/` is removed from the maintained tree. Its earlier versions
-remain available through Git history. Deleting that directory does not rewrite
-historical commits or shrink the existing Git object database.
+`docs/mobileworld-import.json` records the original import snapshot. Its source
+paths and hashes are intentionally not rewritten to describe later edits.
+MobileWorld's licenses and attribution are preserved in
+[MobileWorld/UPSTREAM.md](../MobileWorld/UPSTREAM.md).
